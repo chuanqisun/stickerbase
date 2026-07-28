@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
     "composite": true,
-    "skipLibCheck": true,
-    "target": "ESNext",
-    "lib": ["ESNext", "DOM.Iterable"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["node"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "verbatimModuleSyntax": true,
-    "allowSyntheticDefaultImports": true,
+    "noEmit": true,
+    "skipLibCheck": true,
     "strict": true,
-    "allowJs": true,
-    "noEmit": true
+    "target": "ESNext",
+    "verbatimModuleSyntax": true
   },
   "include": ["scripts"]
 }
