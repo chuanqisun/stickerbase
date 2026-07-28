@@ -342,15 +342,23 @@ async function processImage(imageName: string, index: number, total: number, ima
 
     const indexMap: Record<string, StickerCoordinates> = {};
 
-    // 4. Crop, resize, and save each sticker mask in webp format as stickers/<name-of-image.ext>/<sticker-index>.webp
-    for (let stickerIdx = 0; stickerIdx < masks.length; stickerIdx++) {
-      const mask = masks[stickerIdx];
-      const stickerFileName = `${stickerIdx}.webp`;
-      const outputPath = path.join(targetStickersDir, stickerFileName);
+    // 4. Crop, resize, and save each sticker mask in webp format using RxJS mergeMap parallelism
+    const STICKER_PARALLELISM = 10;
+    const stickerTasks = masks.map((mask, stickerIdx) => ({ mask, stickerIdx }));
 
-      const coords = await processAndSaveSticker(mask.url, outputPath);
-      indexMap[stickerFileName] = coords;
-      console.log(`    Saved: stickers/${imageName}/${stickerFileName}`);
+    if (stickerTasks.length > 0) {
+      await lastValueFrom(
+        from(stickerTasks).pipe(
+          mergeMap(async ({ mask, stickerIdx }) => {
+            const stickerFileName = `${stickerIdx}.webp`;
+            const outputPath = path.join(targetStickersDir, stickerFileName);
+
+            const coords = await processAndSaveSticker(mask.url, outputPath);
+            indexMap[stickerFileName] = coords;
+            console.log(`    Saved: stickers/${imageName}/${stickerFileName}`);
+          }, STICKER_PARALLELISM),
+        ),
+      );
     }
 
     // 5. Write index.json containing coordinates map for each sticker
@@ -390,7 +398,7 @@ async function main() {
   console.log(`Found ${imageFiles.length} image(s) in ${imagesDir}\n`);
 
   // Parallelism concurrency control using RxJS mergeMap
-  const PARALLELISM = 1;
+  const PARALLELISM = 10;
 
   const tasks = imageFiles.map((imageName, index) => ({
     imageName,
