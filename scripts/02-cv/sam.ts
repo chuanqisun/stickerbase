@@ -4,6 +4,7 @@ import fsSync from "fs";
 import fs from "fs/promises";
 import path from "path";
 import { from, lastValueFrom, mergeMap } from "rxjs";
+import sharp from "sharp";
 
 // Interfaces for Fal SAM 3.1 output
 interface SAMImage {
@@ -69,16 +70,13 @@ function getMimeType(filePath: string): string {
 }
 
 /**
- * Upload a local image file to fal storage.
+ * Convert a local image file to a Data URI.
  */
-async function uploadLocalImage(imagePath: string): Promise<string> {
+async function imageToDataUri(imagePath: string): Promise<string> {
   const fileBuffer = await fs.readFile(imagePath);
   const mimeType = getMimeType(imagePath);
-  const fileName = path.basename(imagePath);
-
-  const fileObject = typeof File !== "undefined" ? new File([fileBuffer], fileName, { type: mimeType }) : new Blob([fileBuffer], { type: mimeType });
-
-  return await fal.storage.upload(fileObject);
+  const base64Data = fileBuffer.toString("base64");
+  return `data:${mimeType};base64,${base64Data}`;
 }
 
 /**
@@ -110,15 +108,35 @@ async function segmentStickers(imageUrl: string, prompt = "sticker"): Promise<SA
 }
 
 /**
- * Download a file from URL and save to local path.
+ * Download mask image from URL, crop bounding box, resize to 400x400 with object-fit: contain logic,
+ * and save in WEBP format.
  */
-async function downloadAndSave(url: string, outputPath: string): Promise<void> {
+async function processAndSaveSticker(url: string, outputPath: string): Promise<void> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to download from ${url}: ${response.statusText}`);
   }
   const arrayBuffer = await response.arrayBuffer();
-  await fs.writeFile(outputPath, Buffer.from(arrayBuffer));
+  const inputBuffer = Buffer.from(arrayBuffer);
+
+  let pipeline = sharp(inputBuffer);
+
+  try {
+    // Crop: Trim surrounding transparent / background pixels tight to sticker content
+    const trimmedBuffer = await pipeline.trim().toBuffer();
+    pipeline = sharp(trimmedBuffer);
+  } catch {
+    // If trimming fails (e.g. uniform color or empty mask), fallback to original image
+  }
+
+  // Resize to standard 400x400 square shape with object-fit: contain logic and save as webp
+  await pipeline
+    .resize(400, 400, {
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .webp()
+    .toFile(outputPath);
 }
 
 /**
@@ -128,21 +146,18 @@ async function processImage(imageName: string, index: number, total: number, ima
   const imagePath = path.join(imagesDir, imageName);
   const targetStickersDir = path.join(stickersDir, imageName);
 
-  // Skip if already processed and contains files
+  // Skip if output folder already exists
   if (fsSync.existsSync(targetStickersDir)) {
-    const existingFiles = await fs.readdir(targetStickersDir);
-    if (existingFiles.length > 0) {
-      console.log(`[${index + 1}/${total}] Skipping ${imageName} (already processed: ${existingFiles.length} sticker(s) found)`);
-      return;
-    }
+    console.log(`[${index + 1}/${total}] Skipping ${imageName} (output folder already exists: ${targetStickersDir})`);
+    return;
   }
 
   console.log(`[${index + 1}/${total}] Processing ${imageName}...`);
 
   try {
-    // 1. Upload local image to fal storage
-    console.log(`  Uploading ${imageName} to fal storage...`);
-    const imageUrl = await uploadLocalImage(imagePath);
+    // 1. Convert local image to Data URI
+    console.log(`  Converting ${imageName} to Data URI...`);
+    const imageUrl = await imageToDataUri(imagePath);
 
     // 2. Segment stickers using SAM 3.1
     console.log(`  Running SAM 3.1 segmentation for stickers...`);
@@ -154,25 +169,13 @@ async function processImage(imageName: string, index: number, total: number, ima
     // 3. Ensure target directory exists: stickers/<name-of-image.ext>/
     await fs.mkdir(targetStickersDir, { recursive: true });
 
-    // 4. Download and save each sticker mask as stickers/<name-of-image.ext>/<sticker-index.ext>
+    // 4. Crop, resize, and save each sticker mask in webp format as stickers/<name-of-image.ext>/<sticker-index>.webp
     for (let stickerIdx = 0; stickerIdx < masks.length; stickerIdx++) {
       const mask = masks[stickerIdx];
-
-      // Determine file extension (default png)
-      let ext = "png";
-      if (mask.content_type?.includes("jpeg") || mask.content_type?.includes("jpg")) {
-        ext = "jpg";
-      } else if (mask.content_type?.includes("webp")) {
-        ext = "webp";
-      } else if (mask.file_name) {
-        const parsedExt = path.extname(mask.file_name).slice(1);
-        if (parsedExt) ext = parsedExt;
-      }
-
-      const stickerFileName = `${stickerIdx}.${ext}`;
+      const stickerFileName = `${stickerIdx}.webp`;
       const outputPath = path.join(targetStickersDir, stickerFileName);
 
-      await downloadAndSave(mask.url, outputPath);
+      await processAndSaveSticker(mask.url, outputPath);
       console.log(`    Saved: stickers/${imageName}/${stickerFileName}`);
     }
 
