@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sticker Image Downloader</title>
+    <style>
+      body {
+        max-width: 700px;
+        margin: 40px auto;
+        padding: 0 20px;
+        font: 16px system-ui;
+      }
+      button {
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+      progress {
+        width: 100%;
+        margin-top: 20px;
+      }
+      #log {
+        white-space: pre-wrap;
+        max-height: 400px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sticker Image Downloader</h1>
+    <p>Select a local directory and download images from stickertop.art.</p>
+    <button id="start">Select directory and download</button>
+    <progress id="progress" value="0" max="1"></progress>
+    <pre id="log">Ready.</pre>
+
+    <script type="module">
+      const button = document.querySelector("#start");
+      const progress = document.querySelector("#progress");
+      const log = document.querySelector("#log");
+
+      const message = (text, error = false) => {
+        log.textContent += `\n${text}`;
+        (error ? console.error : console.log)(text);
+      };
+
+      const safeName = (url, index) => {
+        let name = decodeURIComponent(new URL(url).pathname.split("/").pop() || "");
+        name = name.replace(/[<>:"/\\|?*\x00-\x1F]/g, "_");
+        return `${String(index + 1).padStart(4, "0")}-${name || "image"}`;
+      };
+
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        log.textContent = "Requesting directory access…";
+
+        try {
+          // Called synchronously within the click handler.
+          const directoryPromise = window.showDirectoryPicker({ mode: "readwrite" });
+          const rxjsPromise = import("https://esm.sh/rxjs@latest");
+          const directory = await directoryPromise;
+          const { from, mergeMap } = await rxjsPromise;
+
+          message("Loading page…");
+          const pageResponse = await fetch("https://stickertop.art/");
+          if (!pageResponse.ok) {
+            throw new Error(`Page request failed: HTTP ${pageResponse.status}`);
+          }
+
+          const document = new DOMParser().parseFromString(await pageResponse.text(), "text/html");
+
+          const urls = [...document.querySelectorAll("[data-full]")]
+            .map((element) => element.dataset.full)
+            .filter(Boolean)
+            .map((url) => new URL(url, pageResponse.url).href);
+
+          progress.max = Math.max(urls.length, 1);
+          progress.value = 0;
+          message(`Found ${urls.length} images.`);
+
+          let completed = 0;
+
+          await new Promise((resolve, reject) => {
+            from(urls.map((url, index) => ({ url, index })))
+              .pipe(
+                mergeMap(async ({ url, index }) => {
+                  try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const handle = await directory.getFileHandle(safeName(url, index), { create: true });
+                    const writable = await handle.createWritable();
+
+                    try {
+                      await writable.write(await response.blob());
+                      await writable.close();
+                    } catch (error) {
+                      await writable.abort();
+                      throw error;
+                    }
+                  } catch (error) {
+                    message(`Failed: ${url}\n${error.message}`, true);
+                  } finally {
+                    completed++;
+                    progress.value = completed;
+                    message(`${completed}/${urls.length} completed`);
+                  }
+                }, 7),
+              )
+              .subscribe({ complete: resolve, error: reject });
+          });
+
+          message("Download finished.");
+        } catch (error) {
+          message(`Stopped: ${error.message}`, true);
+        } finally {
+          button.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
