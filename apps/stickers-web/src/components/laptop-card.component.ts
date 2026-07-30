@@ -37,7 +37,7 @@ const sortBoundingBoxesForPaint = (metadata: LaptopMetadata, isMatched: (sticker
   });
 
 export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank: number }) => {
-  const { matchGroup, rank } = props;
+  const { matchGroup } = props;
   const metadata$ = new BehaviorSubject<LaptopMetadata | null>(null);
   const naturalSize$ = new BehaviorSubject<{ width: number; height: number } | null>(null);
   const selectedSticker$ = new BehaviorSubject<SelectedSticker | null>(null);
