@@ -16,3 +16,5 @@ console.log(embeddingUrl);
 // - Sort the resulting laptop images by the highest sticker match score within the image
 // - Draw visual overlay on the laptop images, highlighting the bounding box and match score of the matches in that image. Some laptop image may have more than 1 highlights
 // - The entire system should respond to user input live, as user types, adjust k, and similarity limit, the result should update in realtime
+// You may use rxjs to handle async behavior
+// You may use lit's render function and html template literals to handle templating and event binding
