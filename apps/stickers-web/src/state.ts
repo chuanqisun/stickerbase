@@ -31,7 +31,6 @@ const initialApiKey = localStorage.getItem(LOCAL_STORAGE_KEY) || "";
 const initialUrlParams = new URLSearchParams(window.location.search);
 
 export const apiKey$ = new BehaviorSubject<string>(initialApiKey);
-export const showApiKey$ = new BehaviorSubject<boolean>(false);
 
 export const queryText$ = new BehaviorSubject<string>(initialUrlParams.get("q") || "");
 export const topK$ = new BehaviorSubject<number>(20);

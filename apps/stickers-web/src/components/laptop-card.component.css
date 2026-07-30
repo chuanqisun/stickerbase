@@ -111,11 +111,12 @@
 
 .bbox-group.unmatched .bbox-rect {
   stroke: #ffd700;
-  stroke-opacity: 0.5;
+  stroke-opacity: 0;
 }
 
 .bbox-group.unmatched:hover .bbox-rect,
-.bbox-group.unmatched.tag-hovered .bbox-rect {
+.bbox-group.unmatched.tag-hovered .bbox-rect,
+.bbox-group.unmatched:focus .bbox-rect {
   fill: rgba(255, 215, 0, 0.3);
   stroke-opacity: 1;
 }
@@ -172,14 +173,14 @@
 
 .sticker-detail-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
 
   h2 {
-    margin: 0 0 var(--spacing-xs);
+    margin: 0;
     font-family: monospace;
     font-size: 1rem;
   }

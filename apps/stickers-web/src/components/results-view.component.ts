@@ -2,7 +2,7 @@ import { html } from "lit";
 import { ref } from "lit/directives/ref.js";
 import { repeat } from "lit/directives/repeat.js";
 import { BehaviorSubject, combineLatest, map, tap } from "rxjs";
-import { isSearching$, queryText$, searchResults$ } from "../state";
+import { isSearching$, searchResults$ } from "../state";
 import { component, observe, withEffect } from "../ui-kit";
 import { LaptopCard } from "./laptop-card.component";
 import "./results-view.component.css";
@@ -49,10 +49,8 @@ export const ResultsViewComponent = component(() => {
     }),
   );
 
-  const state$ = combineLatest([queryText$, isSearching$, searchResults$, visibleCount$]).pipe(
-    map(([query, searching, results, visibleCount]) => {
-      const trimmedQuery = query.trim();
-
+  const state$ = combineLatest([isSearching$, searchResults$, visibleCount$]).pipe(
+    map(([searching, results, visibleCount]) => {
       if (searching && results.length === 0) {
         return html`
           <div class="empty-state">
@@ -77,11 +75,6 @@ export const ResultsViewComponent = component(() => {
       const hasMoreResults = visibleResults.length < results.length;
 
       return html`
-        <div class="results-summary">
-          ${trimmedQuery
-            ? `${results.length} laptops: strongest matches first, followed by the remaining database order.`
-            : `${results.length} laptops in database order.`}
-        </div>
         <div class="results-grid">
           ${repeat(
             visibleResults,

@@ -1,7 +1,7 @@
 import { html } from "lit";
 import { map } from "rxjs";
 import { dbState$ } from "../services/vector-db.service";
-import { apiKey$, showApiKey$ } from "../state";
+import { apiKey$ } from "../state";
 import { component, observe } from "../ui-kit";
 import "./header.component.css";
 
@@ -9,10 +9,6 @@ export const HeaderComponent = component(() => {
   const onKeyInput = (e: Event) => {
     const input = e.target as HTMLInputElement;
     apiKey$.next(input.value.trim());
-  };
-
-  const toggleShowKey = () => {
-    showApiKey$.next(!showApiKey$.value);
   };
 
   const dbStatusTemplate$ = dbState$.pipe(
@@ -32,18 +28,14 @@ export const HeaderComponent = component(() => {
         case "importing":
           return html`<span class="db-status">Loading vectors into WASM...</span>`;
         case "ready":
-          return html`<span class="status-badge ready">${db.vectorCount.toLocaleString()} Vectors Loaded</span>`;
+          return null;
         case "error":
           return html`<span class="status-badge warn" title=${db.errorMessage || "Error loading DB"}>DB Error</span>`;
       }
     }),
   );
 
-  const inputType$ = showApiKey$.pipe(map((show) => (show ? "text" : "password")));
-  const keyToggleText$ = showApiKey$.pipe(map((show) => (show ? "Hide" : "Show")));
-  const keyBadge$ = apiKey$.pipe(
-    map((key) => (key ? html`<span class="status-badge ready">API Key Set</span>` : html`<span class="status-badge warn">API Key Required</span>`)),
-  );
+  const keyBadge$ = apiKey$.pipe(map((key) => (key ? null : html`<span class="status-badge warn">API Key Required</span>`)));
 
   return html`
     <header class="app-header">
@@ -55,8 +47,10 @@ export const HeaderComponent = component(() => {
         ${observe(dbStatusTemplate$)}
 
         <div class="api-key-container">
+          <label class="api-key-label" for="gemini-api-key">Gemini API Key</label>
           <input
-            type=${observe(inputType$)}
+            id="gemini-api-key"
+            type="password"
             class="api-key-input"
             autocomplete="off"
             autocorrect="off"
@@ -70,7 +64,6 @@ export const HeaderComponent = component(() => {
             .value=${observe(apiKey$)}
             @input=${onKeyInput}
           />
-          <button type="button" class="api-key-toggle-btn" @click=${toggleShowKey}>${observe(keyToggleText$)}</button>
         </div>
 
         ${observe(keyBadge$)}

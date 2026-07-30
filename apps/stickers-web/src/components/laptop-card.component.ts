@@ -22,6 +22,10 @@ type SimilarSticker = {
   bbox: [number, number, number, number];
 };
 
+const formatIndex = (value: string, length: number) => (value.match(/^\d+/)?.[0] ?? "0").padStart(length, "0");
+const formatLaptopTitle = (laptopName: string) => `#${formatIndex(laptopName, 4)}`;
+const formatStickerTitle = (laptopName: string, stickerName: string) => `${formatLaptopTitle(laptopName)}-${formatIndex(stickerName, 2)}`;
+
 const sortBoundingBoxesForPaint = (metadata: LaptopMetadata, isMatched: (stickerName: string) => boolean) =>
   Object.entries(metadata).sort(([leftName, leftBbox], [rightName, rightBbox]) => {
     const matchOrder = Number(isMatched(leftName)) - Number(isMatched(rightName));
@@ -230,7 +234,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
               class="bbox-group ${match ? "query-match" : "unmatched"} ${hoveredStickerName === stickerName ? "tag-hovered" : ""}"
               role="button"
               tabindex="0"
-              aria-label="View ${stickerName} crop"
+              aria-label="View ${formatStickerTitle(matchGroup.laptopName, stickerName)} crop"
               @click=${() => openStickerDetail(selectedSticker)}
               @keydown=${(event: KeyboardEvent) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -270,7 +274,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
               class="bbox-group unmatched detail-bbox-group"
               role="button"
               tabindex="0"
-              aria-label="Focus ${stickerName}"
+              aria-label="Focus ${formatStickerTitle(selectedSticker.laptopName, stickerName)}"
               @click=${(event: MouseEvent) => {
                 event.stopPropagation();
                 selectStickerFromFullView({
@@ -347,6 +351,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
   const renderSimilarSticker = (sticker: SimilarSticker) => {
     const [x, y, width, height] = sticker.bbox;
+    const stickerTitle = formatStickerTitle(sticker.laptopName, sticker.stickerName);
     const cropWidth = `${Math.min(1, width / height) * 100}%`;
     const onCropLoad = (event: Event) => {
       const image = event.currentTarget as HTMLImageElement;
@@ -357,14 +362,14 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     };
 
     return html`
-      <button class="similar-sticker" type="button" aria-label="View ${sticker.stickerName}" @click=${() => selectSimilarSticker(sticker)}>
+      <button class="similar-sticker" type="button" aria-label="View ${stickerTitle}" @click=${() => selectSimilarSticker(sticker)}>
         <div class="similar-sticker-crop">
           <div class="similar-sticker-crop-window" style="width: ${cropWidth}; aspect-ratio: ${width} / ${height}">
-            <img src="/images/${sticker.laptopName}.webp" alt="Crop of ${sticker.stickerName}" loading="lazy" @load=${onCropLoad} />
+            <img src="/images/${sticker.laptopName}.webp" alt="Crop of ${stickerTitle}" loading="lazy" @load=${onCropLoad} />
           </div>
         </div>
         <span class="similar-sticker-caption">
-          <span title=${sticker.stickerName}>${sticker.stickerName}</span>
+          <span>${stickerTitle}</span>
           <strong>${(sticker.similarity * 100).toFixed(1)}%</strong>
         </span>
       </button>
@@ -387,13 +392,11 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
   const template = html`
     <div class="laptop-card">
       <div class="card-header">
-        <span class="rank-badge">#${rank}</span>
-        <span class="laptop-title" title=${matchGroup.laptopName}>${matchGroup.laptopName}</span>
+        <span class="rank-badge">${formatLaptopTitle(matchGroup.laptopName)}</span>
         ${matchGroup.stickers.length > 0
           ? html`
               <div class="scores-badge-group">
                 <span class="top-score-badge" title="Highest sticker match score in this image"> ${topMatchScorePct} </span>
-                <span class="match-count-badge"> ${matchGroup.stickers.length} ${matchGroup.stickers.length === 1 ? "sticker" : "stickers"} </span>
               </div>
             `
           : null}
@@ -404,7 +407,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
           ${ref(onImgRef)}
           class="laptop-img"
           src="/images/${matchGroup.laptopName}.webp"
-          alt=${matchGroup.laptopName}
+          alt=${formatLaptopTitle(matchGroup.laptopName)}
           loading=${stickerDetailRoute$.value?.laptopName === matchGroup.laptopName ? "eager" : "lazy"}
           @load=${onImgLoad}
         />
@@ -428,7 +431,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
               return html`
                 <div class="sticker-detail-header">
                   <div>
-                    <h2>${selectedSticker.name}</h2>
+                    <h2>${formatStickerTitle(selectedSticker.laptopName, selectedSticker.name)}</h2>
                     ${selectedSticker.similarity === null ? null : html`<span>${(selectedSticker.similarity * 100).toFixed(1)}% match</span>`}
                   </div>
                   <form method="dialog">
@@ -458,7 +461,11 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
                 >
                   ${keyed(
                     selectedSticker.laptopName,
-                    html`<img src="/images/${selectedSticker.laptopName}.webp" alt="Crop of ${selectedSticker.name}" @load=${onMainCropLoad} />`,
+                    html`<img
+                      src="/images/${selectedSticker.laptopName}.webp"
+                      alt="Crop of ${formatStickerTitle(selectedSticker.laptopName, selectedSticker.name)}"
+                      @load=${onMainCropLoad}
+                    />`,
                   )}
                   ${observe(combineLatest([selectedLaptopMetadata$, selectedLaptopSize$]).pipe(map((data) => renderDetailOverlay(selectedSticker, data))))}
                 </div>

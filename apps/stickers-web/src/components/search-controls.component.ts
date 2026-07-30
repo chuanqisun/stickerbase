@@ -1,6 +1,6 @@
 import { html } from "lit";
-import { map } from "rxjs";
-import { isSearching$, minSimilarity$, queryText$, searchError$, topK$ } from "../state";
+import { combineLatest, map } from "rxjs";
+import { isSearching$, minSimilarity$, queryText$, searchError$, searchResults$, topK$ } from "../state";
 import { component, observe } from "../ui-kit";
 import "./search-controls.component.css";
 
@@ -23,6 +23,18 @@ export const SearchControlsComponent = component(() => {
   const topKStr$ = topK$.pipe(map((v) => String(v)));
   const minSimStr$ = minSimilarity$.pipe(map((v) => String(v)));
   const minSimPct$ = minSimilarity$.pipe(map((v) => `${(v * 100).toFixed(0)}%`));
+  const statusTemplate$ = combineLatest([searchError$, isSearching$, searchResults$]).pipe(
+    map(([error, searching, results]) => {
+      if (error) return html`<span class="error">⚠️ ${error}</span>`;
+      if (searching) return html`<span>Search...</span>`;
+
+      const matchedResults = results.filter((result) => result.stickers.length > 0);
+      const stickerCount = matchedResults.reduce((count, result) => count + result.stickers.length, 0);
+      return stickerCount > 0
+        ? html`<span>Found ${stickerCount} stickers on ${matchedResults.length} laptops</span>`
+        : html`<span>${results.length} laptops</span>`;
+    }),
+  );
 
   return html`
     <div class="search-controls">
@@ -45,25 +57,7 @@ export const SearchControlsComponent = component(() => {
           </div>
         </div>
 
-        <div class="status-row">
-          ${observe(
-            searchError$.pipe(
-              map((err) =>
-                err
-                  ? html`<span class="error">⚠️ ${err}</span>`
-                  : observe(
-                      isSearching$.pipe(
-                        map((searching) =>
-                          searching
-                            ? html`<span>Searching with Gemini embeddings...</span>`
-                            : html`<span>Live search active as you type & adjust filters</span>`,
-                        ),
-                      ),
-                    ),
-              ),
-            ),
-          )}
-        </div>
+        <div class="status-row">${observe(statusTemplate$)}</div>
       </div>
     </div>
   `;
