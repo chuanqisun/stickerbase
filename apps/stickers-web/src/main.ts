@@ -4,8 +4,19 @@ import { HeaderComponent } from "./components/header.component";
 import { ResultsViewComponent } from "./components/results-view.component";
 import { SearchControlsComponent } from "./components/search-controls.component";
 import { embedQueryText } from "./services/gemini.service";
-import { dbState$, initVectorDb, queryVectorDb } from "./services/vector-db.service";
-import { apiKey$, groupResultsByLaptop, isSearching$, minSimilarity$, queryText$, searchError$, searchResults$, syncQueryTextRoute, topK$ } from "./state";
+import { dbState$, getLaptopNamesInDbOrder, initVectorDb, queryVectorDb } from "./services/vector-db.service";
+import {
+  apiKey$,
+  appendLaptopsInDbOrder,
+  groupResultsByLaptop,
+  isSearching$,
+  minSimilarity$,
+  queryText$,
+  searchError$,
+  searchResults$,
+  syncQueryTextRoute,
+  topK$,
+} from "./state";
 import "./style.css";
 import { component, withEffect } from "./ui-kit";
 
@@ -22,24 +33,26 @@ async function executeSearch(): Promise<void> {
   const minSimilarity = minSimilarity$.value;
   const dbState = dbState$.value;
 
-  if (!apiKey) {
-    isSearching$.next(false);
-    searchError$.next("Gemini API key is required");
-    searchResults$.next([]);
-    return;
-  }
-
-  if (!queryText) {
-    isSearching$.next(false);
-    searchError$.next(null);
-    searchResults$.next([]);
-    return;
-  }
-
   if (dbState.status !== "ready") {
     isSearching$.next(false);
     searchError$.next("Vector DB is still loading...");
     searchResults$.next([]);
+    return;
+  }
+
+  const laptopNames = getLaptopNamesInDbOrder();
+
+  if (!queryText) {
+    isSearching$.next(false);
+    searchError$.next(null);
+    searchResults$.next(appendLaptopsInDbOrder([], laptopNames));
+    return;
+  }
+
+  if (!apiKey) {
+    isSearching$.next(false);
+    searchError$.next("Gemini API key is required");
+    searchResults$.next(appendLaptopsInDbOrder([], laptopNames));
     return;
   }
 
@@ -63,7 +76,7 @@ async function executeSearch(): Promise<void> {
     const rawItems = queryVectorDb(vector, rawLimit, minSimilarity);
 
     const grouped = groupResultsByLaptop(rawItems, topK, minSimilarity);
-    searchResults$.next(grouped);
+    searchResults$.next(appendLaptopsInDbOrder(grouped, laptopNames));
   } catch (err: unknown) {
     if (requestId !== latestSearchRequestId) return;
     const errorMsg = err instanceof Error ? err.message : String(err);

@@ -114,6 +114,19 @@ export function queryVectorDb(queryVector: number[], limit: number, minSimilarit
   });
 }
 
+export function getLaptopNamesInDbOrder(): string[] {
+  if (!dbInstance) return [];
+
+  const laptopNames = new Set<string>();
+  for (const key of dbInstance.keys()) {
+    const lastSlashIndex = key.lastIndexOf("/");
+    if (lastSlashIndex !== -1) {
+      laptopNames.add(key.substring(0, lastSlashIndex));
+    }
+  }
+  return [...laptopNames];
+}
+
 export function querySimilarStickers(stickerKey: string, limit: number): ResultItem[] {
   if (!dbInstance) return [];
 

@@ -120,3 +120,12 @@ export function groupResultsByLaptop(items: ResultItem[], topK: number, minSimil
   groups.sort((a, b) => b.maxSimilarity - a.maxSimilarity);
   return groups.slice(0, topK);
 }
+
+export function appendLaptopsInDbOrder(matchedGroups: LaptopMatchGroup[], laptopNames: string[]): LaptopMatchGroup[] {
+  const matchedLaptopNames = new Set(matchedGroups.map((group) => group.laptopName));
+  const fallbackGroups = laptopNames
+    .filter((laptopName) => !matchedLaptopNames.has(laptopName))
+    .map((laptopName) => ({ laptopName, maxSimilarity: 0, stickers: [] }));
+
+  return [...matchedGroups, ...fallbackGroups];
+}

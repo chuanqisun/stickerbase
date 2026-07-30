@@ -30,10 +30,11 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
   let detailDialog: HTMLDialogElement | undefined;
   let similarStickersRequestId = 0;
 
-  // Fetch bounding box metadata for this laptop on mount
-  fetchLaptopMetadata(matchGroup.laptopName).then((meta) => {
-    metadata$.next(meta);
-  });
+  if (matchGroup.stickers.length > 0) {
+    fetchLaptopMetadata(matchGroup.laptopName).then((meta) => {
+      metadata$.next(meta);
+    });
+  }
 
   const updateNaturalSize = (img: HTMLImageElement) => {
     if (img.naturalWidth && img.naturalHeight) {
@@ -228,10 +229,14 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
       <div class="card-header">
         <span class="rank-badge">#${rank}</span>
         <span class="laptop-title" title=${matchGroup.laptopName}>${matchGroup.laptopName}</span>
-        <div class="scores-badge-group">
-          <span class="top-score-badge" title="Highest sticker match score in this image"> ${topMatchScorePct} </span>
-          <span class="match-count-badge"> ${matchGroup.stickers.length} ${matchGroup.stickers.length === 1 ? "sticker" : "stickers"} </span>
-        </div>
+        ${matchGroup.stickers.length > 0
+          ? html`
+              <div class="scores-badge-group">
+                <span class="top-score-badge" title="Highest sticker match score in this image"> ${topMatchScorePct} </span>
+                <span class="match-count-badge"> ${matchGroup.stickers.length} ${matchGroup.stickers.length === 1 ? "sticker" : "stickers"} </span>
+              </div>
+            `
+          : null}
       </div>
 
       <div class="card-media-viewport">
@@ -246,16 +251,20 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
         ${observe(overlay$.pipe(map(renderOverlay)))}
       </div>
 
-      <div class="card-details">
-        ${matchGroup.stickers.map(
-          (s) => html`
-            <span class="sticker-tag">
-              <span>${s.stickerName}</span>
-              <span class="sticker-score">${(s.similarity * 100).toFixed(1)}%</span>
-            </span>
-          `,
-        )}
-      </div>
+      ${matchGroup.stickers.length > 0
+        ? html`
+            <div class="card-details">
+              ${matchGroup.stickers.map(
+                (s) => html`
+                  <span class="sticker-tag">
+                    <span>${s.stickerName}</span>
+                    <span class="sticker-score">${(s.similarity * 100).toFixed(1)}%</span>
+                  </span>
+                `,
+              )}
+            </div>
+          `
+        : null}
 
       <dialog ${ref(onDialogRef)} class="sticker-detail-dialog" @close=${onDialogClose}>
         ${observe(

@@ -18,6 +18,10 @@
   gap: var(--spacing-md);
 }
 
+.results-sentinel {
+  height: 1px;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
