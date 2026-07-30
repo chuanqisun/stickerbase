@@ -28,6 +28,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
   const naturalSize$ = new BehaviorSubject<{ width: number; height: number } | null>(null);
   const selectedSticker$ = new BehaviorSubject<SelectedSticker | null>(null);
   const similarStickers$ = new BehaviorSubject<SimilarSticker[]>([]);
+  const hoveredStickerName$ = new BehaviorSubject<string | null>(null);
   let detailDialog: HTMLDialogElement | undefined;
   let similarStickersRequestId = 0;
 
@@ -115,7 +116,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     detailDialog?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const overlay$ = combineLatest([metadata$, naturalSize$]);
+  const overlay$ = combineLatest([metadata$, naturalSize$, hoveredStickerName$]);
 
   const detailRouteEffect$ = combineLatest([stickerDetailRoute$, metadata$, naturalSize$]).pipe(
     tap(([route, metadata, naturalSize]) => {
@@ -141,8 +142,8 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     }),
   );
 
-  const renderOverlay = (data: [LaptopMetadata | null, { width: number; height: number } | null]) => {
-    const [meta, size] = data;
+  const renderOverlay = (data: [LaptopMetadata | null, { width: number; height: number } | null, string | null]) => {
+    const [meta, size, hoveredStickerName] = data;
     if (!meta || !size || size.width === 0 || size.height === 0) {
       return html``;
     }
@@ -166,7 +167,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
           return svg`
             <g
-              class="bbox-group ${match ? "query-match" : "unmatched"}"
+              class="bbox-group ${match ? "query-match" : "unmatched"} ${hoveredStickerName === stickerName ? "tag-hovered" : ""}"
               role="button"
               tabindex="0"
               aria-label="View ${stickerName} crop"
@@ -187,6 +188,48 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
   };
 
   const topMatchScorePct = `${(matchGroup.maxSimilarity * 100).toFixed(1)}%`;
+
+  const renderStickerTags = (metadata: LaptopMetadata | null) => {
+    if (!metadata) return html``;
+
+    const matchesByName = new Map(matchGroup.stickers.map((sticker) => [sticker.stickerName, sticker]));
+    const stickerNames = Object.keys(metadata).sort((left, right) => {
+      const leftMatch = matchesByName.get(left);
+      const rightMatch = matchesByName.get(right);
+
+      if (leftMatch && rightMatch) return rightMatch.similarity - leftMatch.similarity;
+      if (leftMatch) return -1;
+      if (rightMatch) return 1;
+      return left.localeCompare(right, undefined, { numeric: true });
+    });
+
+    return stickerNames.map((stickerName) => {
+      const bbox = metadata[stickerName];
+      if (!bbox) return html``;
+
+      const match = matchesByName.get(stickerName);
+      const stickerIndex = stickerName.replace(/\.[^.]+$/, "");
+      const selectedSticker: SelectedSticker = {
+        laptopName: matchGroup.laptopName,
+        name: stickerName,
+        similarity: match?.similarity ?? null,
+        bbox,
+      };
+
+      return html`
+        <button
+          class="sticker-tag ${match ? "query-match" : ""}"
+          type="button"
+          aria-label="View sticker ${stickerIndex}"
+          @mouseenter=${() => hoveredStickerName$.next(stickerName)}
+          @mouseleave=${() => hoveredStickerName$.next(null)}
+          @click=${() => openStickerDetail(selectedSticker)}
+        >
+          <span>${stickerIndex}</span>
+        </button>
+      `;
+    });
+  };
 
   const renderSimilarSticker = (sticker: SimilarSticker) => {
     const [x, y, width, height] = sticker.bbox;
@@ -238,20 +281,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
         ${observe(overlay$.pipe(map(renderOverlay)))}
       </div>
 
-      ${matchGroup.stickers.length > 0
-        ? html`
-            <div class="card-details">
-              ${matchGroup.stickers.map(
-                (s) => html`
-                  <span class="sticker-tag">
-                    <span>${s.stickerName}</span>
-                    <span class="sticker-score">${(s.similarity * 100).toFixed(1)}%</span>
-                  </span>
-                `,
-              )}
-            </div>
-          `
-        : null}
+      <div class="card-details">${observe(metadata$.pipe(map(renderStickerTags)))}</div>
 
       <dialog ${ref(onDialogRef)} class="sticker-detail-dialog" @close=${onDialogClose}>
         ${observe(

@@ -104,16 +104,20 @@
   stroke: #00e676;
 }
 
-.bbox-group.query-match:hover .bbox-rect {
+.bbox-group.query-match:hover .bbox-rect,
+.bbox-group.query-match.tag-hovered .bbox-rect {
   fill: rgba(0, 230, 118, 0.22);
 }
 
 .bbox-group.unmatched .bbox-rect {
   stroke: #ffd700;
+  stroke-opacity: 0.5;
 }
 
-.bbox-group.unmatched:hover .bbox-rect {
+.bbox-group.unmatched:hover .bbox-rect,
+.bbox-group.unmatched.tag-hovered .bbox-rect {
   fill: rgba(255, 215, 0, 0.3);
+  stroke-opacity: 1;
 }
 
 .card-details {
@@ -126,19 +130,27 @@
 }
 
 .sticker-tag {
+  appearance: none;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 0.75rem;
   font-family: monospace;
+  line-height: normal;
   padding: 2px 6px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 3px;
   color: var(--text-primary);
+  cursor: pointer;
 }
 
-.sticker-score {
+.sticker-tag:hover,
+.sticker-tag:focus-visible {
+  border-color: var(--text-muted);
+}
+
+.sticker-tag.query-match {
   font-weight: 700;
   color: #00a844;
 }
