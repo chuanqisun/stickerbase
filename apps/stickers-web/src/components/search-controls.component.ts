@@ -39,7 +39,7 @@ export const SearchControlsComponent = component(() => {
   return html`
     <div class="search-controls">
       <div class="query-input-group">
-        <input class="query-input" type="text" placeholder="Octocat, Penguin, Docker" .value=${observe(queryText$)} @input=${onTextChange} />
+        <input class="query-input" type="text" placeholder="Octocat, Penguin, Docker, Rust" .value=${observe(queryText$)} @input=${onTextChange} />
       </div>
 
       <div class="controls-row">

@@ -40,7 +40,7 @@ export const HeaderComponent = component(() => {
   return html`
     <header class="app-header">
       <div class="header-brand">
-        <h1 class="header-title">Stickertop DB</h1>
+        <h1 class="header-title">Stickerbase</h1>
       </div>
 
       <div class="header-controls">

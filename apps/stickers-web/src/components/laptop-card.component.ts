@@ -432,7 +432,6 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
                 <div class="sticker-detail-header">
                   <div>
                     <h2>${formatStickerTitle(selectedSticker.laptopName, selectedSticker.name)}</h2>
-                    ${selectedSticker.similarity === null ? null : html`<span>${(selectedSticker.similarity * 100).toFixed(1)}% match</span>`}
                   </div>
                   <form method="dialog">
                     <button type="submit" class="sticker-detail-close" aria-label="Close sticker detail" title="Close">&times;</button>
