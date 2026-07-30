@@ -11,5 +11,9 @@
   "devDependencies": {
     "typescript": "~6.0.2",
     "vite": "^8.2.0"
+  },
+  "dependencies": {
+    "@google/genai": "^2.15.0",
+    "eigen-db": "^5.0.0"
   }
 }
