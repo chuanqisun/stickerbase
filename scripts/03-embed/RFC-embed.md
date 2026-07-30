@@ -1,0 +1,7 @@
+- Use Gemini embeddings API https://ai.google.dev/gemini-api/docs/embeddings, 1536 dimensions, Embeddings 2 model
+- Leverage Gemini API's batch embedding support, embed up to 6 images at once
+- Use RxJS mergeMap to enable pipelining and parallelism (we can run 10 requests at a time)
+- Output should be stored in stickers/<filename.ext>/embeddings.json
+- The script should be incremental and skip folders that already contain an embeddings.json file
+- Since the API only support jpeg,png format, you need to convert to jpeg in memory before embedding
+- Console log progress, show number folders and number of images processed.
