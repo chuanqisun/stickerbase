@@ -26,6 +26,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          fetch-tags: false
+          lfs: false
+            sparse-checkout: apps/stickers-web
+      - name: Pull web assets from Git LFS
+        run: git lfs pull --include="apps/stickers-web/public/**"
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: npm install, build, and test
