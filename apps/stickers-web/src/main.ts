@@ -1,22 +1,137 @@
-import embeddingUrl from "../../../data/embeddings.bin?url";
+import { html, render } from "lit";
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  from,
+  merge,
+  switchMap,
+  tap,
+} from "rxjs";
+import { HeaderComponent } from "./components/header.component";
+import { ResultsViewComponent } from "./components/results-view.component";
+import { SearchControlsComponent } from "./components/search-controls.component";
+import { embedQueryText } from "./services/gemini.service";
+import { dbState$, initVectorDb, queryVectorDb } from "./services/vector-db.service";
+import {
+  apiKey$,
+  groupResultsByLaptop,
+  isSearching$,
+  minSimilarity$,
+  queryText$,
+  searchError$,
+  searchResults$,
+  topK$,
+  triggerMatch$,
+} from "./state";
 import "./style.css";
+import { component, withEffect } from "./ui-kit";
 
-console.log(embeddingUrl);
+// Cache latest query vector so slider adjustments re-query instantaneously without re-calling Gemini API
+let cachedQueryText = "";
+let cachedQueryVector: number[] | null = null;
 
-// Use eigen-db (already in package.json, https://github.com/chuanqisun/eigen-db) to import the embedding binary file from the url
-// The db binary file is available in public/embeddings.bin
-// - ideally show import progress, if available
-// Add password input box (disable autofill or any password manage integration)
-// - allow user to enter gemini api key
-// - sync with localstorage
-// A textarea where user can type in any text
-// User clicks match, the following process happens
-// - The user input text is embedded for querying against the vector db. Use gemini embeddings 2 model for the query. The documents are already embedded, see scripts/03-embed/01-embed.ts. Follow documents in https://ai.google.dev/gemini-api/docs/embeddings to figure out the best way to embed the query against the corpus of images.
-// - The top k nearest matches are retrieved, make k count and min similarity adjustable
-// - The results are grouped by laptop images, not individual sticker images
-// - Sort the resulting laptop images by the highest sticker match score within the image
-// - Draw visual overlay on the laptop images, highlighting the bounding box and match score of the matches in that image. Some laptop image may have more than 1 highlights
-// - The entire system should respond to user input live, as user types, adjust k, and similarity limit, the result should update in realtime
-// All the laptop images data and bounding box data are in public/images folder. You need to result the filenames at runtime for perf reasons
-// You may use rxjs to handle async behavior
-// You may use lit's render function and html template literals to handle templating and event binding
+async function executeSearch(): Promise<void> {
+  const apiKey = apiKey$.value.trim();
+  const queryText = queryText$.value.trim();
+  const topK = topK$.value;
+  const minSimilarity = minSimilarity$.value;
+  const dbState = dbState$.value;
+
+  if (!apiKey) {
+    searchError$.next("Gemini API key is required");
+    searchResults$.next([]);
+    return;
+  }
+
+  if (!queryText) {
+    searchError$.next(null);
+    searchResults$.next([]);
+    return;
+  }
+
+  if (dbState.status !== "ready") {
+    searchError$.next("Vector DB is still loading...");
+    searchResults$.next([]);
+    return;
+  }
+
+  try {
+    isSearching$.next(true);
+    searchError$.next(null);
+
+    let vector: number[];
+    if (queryText === cachedQueryText && cachedQueryVector) {
+      vector = cachedQueryVector;
+    } else {
+      vector = await embedQueryText(apiKey, queryText);
+      cachedQueryText = queryText;
+      cachedQueryVector = vector;
+    }
+
+    // Retrieve enough raw matches to group into topK laptop images
+    const rawLimit = Math.max(100, topK * 15);
+    const rawItems = queryVectorDb(vector, rawLimit, minSimilarity);
+
+    const grouped = groupResultsByLaptop(rawItems, topK, minSimilarity);
+    searchResults$.next(grouped);
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    searchError$.next(errorMsg);
+  } finally {
+    isSearching$.next(false);
+  }
+}
+
+// Main App Root Component
+const App = component(() => {
+  // RxJS pipeline reacting to live user inputs
+  const queryDebounced$ = queryText$.pipe(
+    debounceTime(300),
+    distinctUntilChanged()
+  );
+
+  const searchTrigger$ = merge(
+    queryDebounced$,
+    topK$,
+    minSimilarity$,
+    triggerMatch$,
+    dbState$.pipe(filter((s) => s.status === "ready"))
+  );
+
+  const searchEffect$ = searchTrigger$.pipe(
+    switchMap(() => from(executeSearch())),
+    catchError((err, caught) => {
+      console.error("Search effect error:", err);
+      return caught;
+    })
+  );
+
+  // Initialize Vector DB on app load
+  const dbInitEffect$ = from(initVectorDb()).pipe(
+    tap({
+      error: (err) => console.error("Failed to initialize vector database:", err),
+    }),
+    catchError((_, caught) => caught)
+  );
+
+  const combinedEffects$ = merge(searchEffect$, dbInitEffect$);
+
+  const template = html`
+    <div id="app">
+      ${HeaderComponent()}
+      <main class="main-layout">
+        ${SearchControlsComponent()}
+        ${ResultsViewComponent()}
+      </main>
+    </div>
+  `;
+
+  return withEffect(template, combinedEffects$);
+});
+
+// Mount application into DOM
+const rootEl = document.getElementById("app") || document.body;
+render(App(), rootEl);
+

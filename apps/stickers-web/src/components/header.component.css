@@ -1,0 +1,105 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.header-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.db-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.db-progress-bar {
+  width: 100px;
+  height: 6px;
+  background-color: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.db-progress-fill {
+  height: 100%;
+  background-color: var(--accent-color);
+  transition: width 0.2s ease;
+}
+
+.api-key-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 2px var(--spacing-xs);
+}
+
+.api-key-input {
+  border: none;
+  outline: none;
+  padding: 4px var(--spacing-xs);
+  font-size: 0.8125rem;
+  width: 220px;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.api-key-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.api-key-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.status-badge.ready {
+  background-color: rgba(0, 200, 83, 0.15);
+  color: #00a844;
+}
+
+.status-badge.warn {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: #d84315;
+}
