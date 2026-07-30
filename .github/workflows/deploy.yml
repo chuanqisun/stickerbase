@@ -30,29 +30,6 @@ jobs:
           fetch-depth: 1
           fetch-tags: false
           lfs: false
-          sparse-checkout: |
-            apps/stickers-web
-            data/public.zip
-          sparse-checkout-cone-mode: false
-      - name: Fetch and extract public assets
-        env:
-          GIT_LFS_FORCE_PROGRESS: "1"
-          GIT_ATTR_SOURCE: HEAD
-        run: |
-          set -x
-          git lfs version
-          git lfs env
-          git lfs ls-files --long --size --include="data/public.zip"
-          lfs_oid="$(sed -n 's/^oid sha256://p' data/public.zip)"
-          lfs_size="$(sed -n 's/^size //p' data/public.zip)"
-          test -n "$lfs_oid"
-          test -n "$lfs_size"
-          git lfs fetch --include="data/public.zip"
-          lfs_object="$(git rev-parse --git-dir)/lfs/objects/${lfs_oid:0:2}/${lfs_oid:2:2}/$lfs_oid"
-          test -f "$lfs_object"
-          test "$(stat --format=%s "$lfs_object")" = "$lfs_size"
-          ls -lh "$lfs_object"
-          unzip -o "$lfs_object" -d apps/stickers-web/public
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: npm install, build, and test
