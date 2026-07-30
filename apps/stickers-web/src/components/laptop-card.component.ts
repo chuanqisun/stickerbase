@@ -1,15 +1,25 @@
 import { html, svg } from "lit";
 import { ref } from "lit/directives/ref.js";
-import { BehaviorSubject, combineLatest, map } from "rxjs";
+import { BehaviorSubject, combineLatest, map, tap } from "rxjs";
 import { fetchLaptopMetadata, type LaptopMetadata } from "../services/metadata.service";
-import type { LaptopMatchGroup } from "../state";
-import { component, observe } from "../ui-kit";
+import { clearStickerDetailRoute, openStickerDetailRoute, stickerDetailRoute$, type LaptopMatchGroup } from "../state";
+import { component, observe, withEffect } from "../ui-kit";
 import "./laptop-card.component.css";
+
+type SelectedSticker = {
+  name: string;
+  similarity: number;
+  bbox: [number, number, number, number];
+  imageWidth: number;
+  imageHeight: number;
+};
 
 export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank: number }) => {
   const { matchGroup, rank } = props;
   const metadata$ = new BehaviorSubject<LaptopMetadata | null>(null);
   const naturalSize$ = new BehaviorSubject<{ width: number; height: number } | null>(null);
+  const selectedSticker$ = new BehaviorSubject<SelectedSticker | null>(null);
+  let detailDialog: HTMLDialogElement | undefined;
 
   // Fetch bounding box metadata for this laptop on mount
   fetchLaptopMetadata(matchGroup.laptopName).then((meta) => {
@@ -33,7 +43,48 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     }
   };
 
+  const onDialogRef = (element: Element | undefined) => {
+    detailDialog = element instanceof HTMLDialogElement ? element : undefined;
+  };
+
+  const openStickerDetail = (selectedSticker: SelectedSticker) => {
+    openStickerDetailRoute({
+      laptopName: matchGroup.laptopName,
+      stickerName: selectedSticker.name,
+    });
+  };
+
+  const onDialogClose = () => {
+    const route = stickerDetailRoute$.value;
+    if (route?.laptopName === matchGroup.laptopName) {
+      clearStickerDetailRoute();
+    }
+  };
+
   const overlay$ = combineLatest([metadata$, naturalSize$]);
+
+  const detailRouteEffect$ = combineLatest([stickerDetailRoute$, metadata$, naturalSize$]).pipe(
+    tap(([route, metadata, naturalSize]) => {
+      const isThisLaptop = route?.laptopName === matchGroup.laptopName;
+      if (!isThisLaptop) {
+        if (detailDialog?.open) detailDialog.close();
+        return;
+      }
+
+      const sticker = matchGroup.stickers.find((candidate) => candidate.stickerName === route.stickerName);
+      const bbox = metadata?.[route.stickerName];
+      if (!sticker || !bbox || !naturalSize || !detailDialog) return;
+
+      selectedSticker$.next({
+        name: sticker.stickerName,
+        similarity: sticker.similarity,
+        bbox,
+        imageWidth: naturalSize.width,
+        imageHeight: naturalSize.height,
+      });
+      if (!detailDialog.open) detailDialog.showModal();
+    }),
+  );
 
   const renderOverlay = (data: [LaptopMetadata | null, { width: number; height: number } | null]) => {
     const [meta, size] = data;
@@ -61,13 +112,32 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
           const [x, y, w, h] = bbox;
           const isTopMatch = idx === 0;
           const pctText = `${(sticker.similarity * 100).toFixed(1)}%`;
+          const selectedSticker: SelectedSticker = {
+            name: sticker.stickerName,
+            similarity: sticker.similarity,
+            bbox: [x, y, w, h],
+            imageWidth: width,
+            imageHeight: height,
+          };
 
           // Label placement logic: above bbox if enough space, else inside top-left
           const labelY = y > 35 ? y - 10 : y + 25;
           const labelX = x + 6;
 
           return svg`
-            <g class="bbox-group">
+            <g
+              class="bbox-group"
+              role="button"
+              tabindex="0"
+              aria-label="View ${sticker.stickerName} crop"
+              @click=${() => openStickerDetail(selectedSticker)}
+              @keydown=${(event: KeyboardEvent) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openStickerDetail(selectedSticker);
+                }
+              }}
+            >
               <rect class="bbox-rect ${isTopMatch ? "top-match" : ""}" x=${x} y=${y} width=${w} height=${h} rx="4"></rect>
               <rect x=${labelX - 4} y=${labelY - 18} width=${pctText.length * 9 + 12} height="22" rx="3" fill="rgba(0, 0, 0, 0.85)"></rect>
               <text x=${labelX} y=${labelY} fill=${isTopMatch ? "#ffd700" : "#00e676"} font-size="14" font-family="system-ui, sans-serif" font-weight="bold">
@@ -82,7 +152,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
   const topMatchScorePct = `${(matchGroup.maxSimilarity * 100).toFixed(1)}%`;
 
-  return html`
+  const template = html`
     <div class="laptop-card">
       <div class="card-header">
         <span class="rank-badge">#${rank}</span>
@@ -94,7 +164,14 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
       </div>
 
       <div class="card-media-viewport">
-        <img ${ref(onImgRef)} class="laptop-img" src="/images/${matchGroup.laptopName}.webp" alt=${matchGroup.laptopName} loading="lazy" @load=${onImgLoad} />
+        <img
+          ${ref(onImgRef)}
+          class="laptop-img"
+          src="/images/${matchGroup.laptopName}.webp"
+          alt=${matchGroup.laptopName}
+          loading=${stickerDetailRoute$.value?.laptopName === matchGroup.laptopName ? "eager" : "lazy"}
+          @load=${onImgLoad}
+        />
         ${observe(overlay$.pipe(map(renderOverlay)))}
       </div>
 
@@ -108,6 +185,42 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
           `,
         )}
       </div>
+
+      <dialog ${ref(onDialogRef)} class="sticker-detail-dialog" @close=${onDialogClose}>
+        ${observe(
+          selectedSticker$.pipe(
+            map((selectedSticker) => {
+              if (!selectedSticker) return html``;
+
+              const [x, y, width, height] = selectedSticker.bbox;
+              const cropStyle = `aspect-ratio: ${width} / ${height}`;
+              const imageStyle = [
+                `width: ${(selectedSticker.imageWidth / width) * 100}%`,
+                `height: ${(selectedSticker.imageHeight / height) * 100}%`,
+                `left: ${(-x / width) * 100}%`,
+                `top: ${(-y / height) * 100}%`,
+              ].join("; ");
+
+              return html`
+                <div class="sticker-detail-header">
+                  <div>
+                    <h2>${selectedSticker.name}</h2>
+                    <span>${(selectedSticker.similarity * 100).toFixed(1)}% match</span>
+                  </div>
+                  <form method="dialog">
+                    <button type="submit" class="sticker-detail-close" aria-label="Close sticker detail" title="Close">&times;</button>
+                  </form>
+                </div>
+                <div class="sticker-detail-crop" style=${cropStyle}>
+                  <img src="/images/${matchGroup.laptopName}.webp" alt="Crop of ${selectedSticker.name}" style=${imageStyle} />
+                </div>
+              `;
+            }),
+          ),
+        )}
+      </dialog>
     </div>
   `;
+
+  return withEffect(template, detailRouteEffect$);
 });

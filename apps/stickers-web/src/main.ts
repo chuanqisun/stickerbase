@@ -5,15 +5,17 @@ import { ResultsViewComponent } from "./components/results-view.component";
 import { SearchControlsComponent } from "./components/search-controls.component";
 import { embedQueryText } from "./services/gemini.service";
 import { dbState$, initVectorDb, queryVectorDb } from "./services/vector-db.service";
-import { apiKey$, groupResultsByLaptop, isSearching$, minSimilarity$, queryText$, searchError$, searchResults$, topK$ } from "./state";
+import { apiKey$, groupResultsByLaptop, isSearching$, minSimilarity$, queryText$, searchError$, searchResults$, syncQueryTextRoute, topK$ } from "./state";
 import "./style.css";
 import { component, withEffect } from "./ui-kit";
 
 // Cache latest query vector so slider adjustments re-query instantaneously without re-calling Gemini API
 let cachedQueryText = "";
 let cachedQueryVector: number[] | null = null;
+let latestSearchRequestId = 0;
 
 async function executeSearch(): Promise<void> {
+  const requestId = ++latestSearchRequestId;
   const apiKey = apiKey$.value.trim();
   const queryText = queryText$.value.trim();
   const topK = topK$.value;
@@ -21,18 +23,21 @@ async function executeSearch(): Promise<void> {
   const dbState = dbState$.value;
 
   if (!apiKey) {
+    isSearching$.next(false);
     searchError$.next("Gemini API key is required");
     searchResults$.next([]);
     return;
   }
 
   if (!queryText) {
+    isSearching$.next(false);
     searchError$.next(null);
     searchResults$.next([]);
     return;
   }
 
   if (dbState.status !== "ready") {
+    isSearching$.next(false);
     searchError$.next("Vector DB is still loading...");
     searchResults$.next([]);
     return;
@@ -51,6 +56,8 @@ async function executeSearch(): Promise<void> {
       cachedQueryVector = vector;
     }
 
+    if (requestId !== latestSearchRequestId) return;
+
     // Retrieve enough raw matches to group into topK laptop images
     const rawLimit = Math.max(100, topK * 15);
     const rawItems = queryVectorDb(vector, rawLimit, minSimilarity);
@@ -58,17 +65,20 @@ async function executeSearch(): Promise<void> {
     const grouped = groupResultsByLaptop(rawItems, topK, minSimilarity);
     searchResults$.next(grouped);
   } catch (err: unknown) {
+    if (requestId !== latestSearchRequestId) return;
     const errorMsg = err instanceof Error ? err.message : String(err);
     searchError$.next(errorMsg);
   } finally {
-    isSearching$.next(false);
+    if (requestId === latestSearchRequestId) {
+      isSearching$.next(false);
+    }
   }
 }
 
 // Main App Root Component
 const App = component(() => {
   // RxJS pipeline reacting to live user inputs
-  const queryDebounced$ = queryText$.pipe(debounceTime(300), distinctUntilChanged());
+  const queryDebounced$ = queryText$.pipe(debounceTime(300), distinctUntilChanged(), tap(syncQueryTextRoute));
 
   const searchTrigger$ = merge(queryDebounced$, topK$, minSimilarity$, dbState$.pipe(filter((s) => s.status === "ready")));
 

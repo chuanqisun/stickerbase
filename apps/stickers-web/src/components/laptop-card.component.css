@@ -84,6 +84,15 @@
   pointer-events: none;
 }
 
+.bbox-group {
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.bbox-group:focus .bbox-rect {
+  stroke: #ffffff;
+}
+
 .bbox-rect {
   fill: rgba(0, 230, 118, 0.22);
   stroke: #00e676;
@@ -122,4 +131,64 @@
 .sticker-score {
   font-weight: 700;
   color: #00a844;
+}
+
+.sticker-detail-dialog {
+  width: min(90vw, 720px);
+  max-height: 90vh;
+  padding: 0;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.72);
+  }
+}
+
+.sticker-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+
+  h2 {
+    margin: 0 0 var(--spacing-xs);
+    font-family: monospace;
+    font-size: 1rem;
+  }
+
+  span {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+}
+
+.sticker-detail-close {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sticker-detail-crop {
+  position: relative;
+  width: 100%;
+  max-height: calc(90vh - 5rem);
+  overflow: hidden;
+  background: #0d1117;
+
+  img {
+    position: absolute;
+    max-width: none;
+    object-fit: fill;
+  }
 }
