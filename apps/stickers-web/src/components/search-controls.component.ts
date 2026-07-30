@@ -6,8 +6,8 @@ import "./search-controls.component.css";
 
 export const SearchControlsComponent = component(() => {
   const onTextChange = (e: Event) => {
-    const textarea = e.target as HTMLTextAreaElement;
-    queryText$.next(textarea.value);
+    const input = e.target as HTMLInputElement;
+    queryText$.next(input.value);
   };
 
   const onTopKChange = (e: Event) => {
@@ -27,12 +27,7 @@ export const SearchControlsComponent = component(() => {
   return html`
     <div class="search-controls">
       <div class="query-input-group">
-        <textarea
-          class="query-textarea"
-          placeholder="Describe stickers or laptop aesthetic (e.g. 'anime sticker', 'Rust logo', 'cat on laptop', 'GitHub octocat', 'NASA logo')..."
-          .value=${observe(queryText$)}
-          @input=${onTextChange}
-        ></textarea>
+        <input class="query-input" type="text" placeholder="Octocat, Penguin, Docker" .value=${observe(queryText$)} @input=${onTextChange} />
       </div>
 
       <div class="controls-row">

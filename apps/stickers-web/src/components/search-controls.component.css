@@ -11,11 +11,8 @@
   display: block;
 }
 
-.query-textarea {
+.query-input {
   width: 100%;
-  min-height: 52px;
-  max-height: 120px;
-  resize: vertical;
   padding: var(--spacing-sm);
   font-family: inherit;
   font-size: 0.9375rem;
@@ -26,7 +23,7 @@
   background-color: var(--bg-primary);
 }
 
-.query-textarea:focus {
+.query-input:focus {
   border-color: var(--accent-color);
 }
 
