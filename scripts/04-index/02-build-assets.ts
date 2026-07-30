@@ -73,7 +73,7 @@ async function main(): Promise<void> {
   const rootDir = process.cwd();
   const imagesDir = path.join(rootDir, "images");
   const stickersDir = path.join(rootDir, "stickers");
-  const dataDir = path.join(rootDir, "apps/stickers-web/public/data");
+  const dataDir = path.join(rootDir, "apps/stickers-web/public");
   const outputImagesDir = path.join(dataDir, "images");
 
   if (!fsSync.existsSync(imagesDir)) {

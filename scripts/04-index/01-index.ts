@@ -25,7 +25,7 @@ async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffe
 async function main(): Promise<void> {
   const rootDir = process.cwd();
   const stickersDir = path.join(rootDir, "stickers");
-  const dataDir = path.join(rootDir, "apps/stickers-web/public/data");
+  const dataDir = path.join(rootDir, "apps/stickers-web/public");
   const outputPath = path.join(dataDir, "embeddings.bin");
 
   if (!fsSync.existsSync(dataDir)) {
