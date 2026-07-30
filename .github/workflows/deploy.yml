@@ -46,6 +46,8 @@ jobs:
           git lfs env
           git lfs ls-files --long data/public.zip
           git lfs fetch --include="data/public.zip"
+          git config --local lfs.forceprogress true
+          echo "Checking out data/public.zip with forced progress output"
           git lfs checkout data/public.zip
           git lfs status
           ls -lh data/public.zip
