@@ -31,6 +31,13 @@ jobs:
           fetch-tags: false
           lfs: false
           sparse-checkout: apps/stickers-web
+      - name: Cache web assets from Git LFS
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-git-lfs-${{ hashFiles('apps/stickers-web/public/**') }}
+          restore-keys: |
+            ${{ runner.os }}-git-lfs-
       - name: Pull web assets from Git LFS
         run: git lfs pull --include="apps/stickers-web/public/**"
       - name: Setup Pages
