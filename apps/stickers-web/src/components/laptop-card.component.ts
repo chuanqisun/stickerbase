@@ -1,4 +1,5 @@
 import { html, svg } from "lit";
+import { keyed } from "lit/directives/keyed.js";
 import { ref } from "lit/directives/ref.js";
 import { BehaviorSubject, combineLatest, map, tap } from "rxjs";
 import { fetchLaptopMetadata, type LaptopMetadata } from "../services/metadata.service";
@@ -10,7 +11,7 @@ import "./laptop-card.component.css";
 type SelectedSticker = {
   laptopName: string;
   name: string;
-  similarity: number;
+  similarity: number | null;
   bbox: [number, number, number, number];
 };
 
@@ -30,11 +31,10 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
   let detailDialog: HTMLDialogElement | undefined;
   let similarStickersRequestId = 0;
 
-  if (matchGroup.stickers.length > 0) {
-    fetchLaptopMetadata(matchGroup.laptopName).then((meta) => {
-      metadata$.next(meta);
-    });
-  }
+  const loadMetadata = () => {
+    if (metadata$.value) return;
+    void fetchLaptopMetadata(matchGroup.laptopName).then((meta) => metadata$.next(meta));
+  };
 
   const updateNaturalSize = (img: HTMLImageElement) => {
     if (img.naturalWidth && img.naturalHeight) {
@@ -45,11 +45,15 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     }
   };
 
-  const onImgLoad = (event: Event) => updateNaturalSize(event.currentTarget as HTMLImageElement);
+  const onImgLoad = (event: Event) => {
+    updateNaturalSize(event.currentTarget as HTMLImageElement);
+    loadMetadata();
+  };
 
   const onImgRef = (element: Element | undefined) => {
     if (element instanceof HTMLImageElement && element.complete) {
       updateNaturalSize(element);
+      loadMetadata();
     }
   };
 
@@ -121,17 +125,18 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
         return;
       }
 
-      const sticker = matchGroup.stickers.find((candidate) => candidate.stickerName === route.stickerName);
       const bbox = metadata?.[route.stickerName];
-      if (!sticker || !bbox || !naturalSize || !detailDialog) return;
+      if (!bbox || !naturalSize || !detailDialog) return;
+
+      const sticker = matchGroup.stickers.find((candidate) => candidate.stickerName === route.stickerName);
 
       selectedSticker$.next({
         laptopName: matchGroup.laptopName,
-        name: sticker.stickerName,
-        similarity: sticker.similarity,
+        name: route.stickerName,
+        similarity: sticker?.similarity ?? null,
         bbox,
       });
-      void loadSimilarStickers(matchGroup.laptopName, sticker.stickerName);
+      void loadSimilarStickers(matchGroup.laptopName, route.stickerName);
       if (!detailDialog.open) detailDialog.showModal();
     }),
   );
@@ -143,42 +148,28 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     }
 
     const { width, height } = size;
+    const matchesByName = new Map(matchGroup.stickers.map((sticker) => [sticker.stickerName, sticker]));
 
     return html`
       <svg class="bbox-overlay-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <filter id="bg-badge" x="-10%" y="-10%" width="120%" height="120%">
-            <feFlood flood-color="#000000" flood-opacity="0.85" result="bg"></feFlood>
-            <feMerge>
-              <feMergeNode in="bg"></feMergeNode>
-              <feMergeNode in="SourceGraphic"></feMergeNode>
-            </feMerge>
-          </filter>
-        </defs>
-        ${matchGroup.stickers.map((sticker, idx) => {
-          const bbox = meta[sticker.stickerName];
+        ${Object.entries(meta).map(([stickerName, bbox]) => {
           if (!bbox || bbox.length < 4) return svg``;
 
           const [x, y, w, h] = bbox;
-          const isTopMatch = idx === 0;
-          const pctText = `${(sticker.similarity * 100).toFixed(1)}%`;
+          const match = matchesByName.get(stickerName);
           const selectedSticker: SelectedSticker = {
             laptopName: matchGroup.laptopName,
-            name: sticker.stickerName,
-            similarity: sticker.similarity,
+            name: stickerName,
+            similarity: match?.similarity ?? null,
             bbox: [x, y, w, h],
           };
 
-          // Label placement logic: above bbox if enough space, else inside top-left
-          const labelY = y > 35 ? y - 10 : y + 25;
-          const labelX = x + 6;
-
           return svg`
             <g
-              class="bbox-group"
+              class="bbox-group ${match ? "query-match" : "unmatched"}"
               role="button"
               tabindex="0"
-              aria-label="View ${sticker.stickerName} crop"
+              aria-label="View ${stickerName} crop"
               @click=${() => openStickerDetail(selectedSticker)}
               @keydown=${(event: KeyboardEvent) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -187,11 +178,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
                 }
               }}
             >
-              <rect class="bbox-rect ${isTopMatch ? "top-match" : ""}" x=${x} y=${y} width=${w} height=${h} rx="4"></rect>
-              <rect x=${labelX - 4} y=${labelY - 18} width=${pctText.length * 9 + 12} height="22" rx="3" fill="rgba(0, 0, 0, 0.85)"></rect>
-              <text x=${labelX} y=${labelY} fill=${isTopMatch ? "#ffd700" : "#00e676"} font-size="14" font-family="system-ui, sans-serif" font-weight="bold">
-                ${pctText}
-              </text>
+              <rect class="bbox-rect" x=${x} y=${y} width=${w} height=${h} rx="4"></rect>
             </g>
           `;
         })}
@@ -286,14 +273,17 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
                 <div class="sticker-detail-header">
                   <div>
                     <h2>${selectedSticker.name}</h2>
-                    <span>${(selectedSticker.similarity * 100).toFixed(1)}% match</span>
+                    ${selectedSticker.similarity === null ? null : html`<span>${(selectedSticker.similarity * 100).toFixed(1)}% match</span>`}
                   </div>
                   <form method="dialog">
                     <button type="submit" class="sticker-detail-close" aria-label="Close sticker detail" title="Close">&times;</button>
                   </form>
                 </div>
                 <div class="sticker-detail-crop" style=${cropStyle}>
-                  <img src="/images/${selectedSticker.laptopName}.webp" alt="Crop of ${selectedSticker.name}" @load=${onMainCropLoad} />
+                  ${keyed(
+                    `${selectedSticker.laptopName}/${selectedSticker.name}`,
+                    html`<img src="/images/${selectedSticker.laptopName}.webp" alt="Crop of ${selectedSticker.name}" @load=${onMainCropLoad} />`,
+                  )}
                 </div>
                 <section class="similar-stickers" aria-labelledby="similar-stickers-title">
                   <h3 id="similar-stickers-title">Similar stickers</h3>

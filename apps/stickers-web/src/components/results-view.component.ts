@@ -24,6 +24,7 @@ export const ResultsViewComponent = component(() => {
       ([entry]) => {
         if (entry?.isIntersecting && visibleCount$.value < searchResults$.value.length) {
           visibleCount$.next(Math.min(visibleCount$.value + RESULTS_BATCH_SIZE, searchResults$.value.length));
+          requestAnimationFrame(observeSentinel);
         }
       },
       { root: resultsViewElement, rootMargin: "600px 0px" },
@@ -41,7 +42,12 @@ export const ResultsViewComponent = component(() => {
     observeSentinel();
   };
 
-  const resetVisibleResultsEffect$ = searchResults$.pipe(tap(() => visibleCount$.next(RESULTS_BATCH_SIZE)));
+  const resetVisibleResultsEffect$ = searchResults$.pipe(
+    tap(() => {
+      visibleCount$.next(RESULTS_BATCH_SIZE);
+      requestAnimationFrame(observeSentinel);
+    }),
+  );
 
   const state$ = combineLatest([queryText$, isSearching$, searchResults$, visibleCount$]).pipe(
     map(([query, searching, results, visibleCount]) => {

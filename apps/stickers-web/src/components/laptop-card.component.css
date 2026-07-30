@@ -90,20 +90,30 @@
 }
 
 .bbox-group:focus .bbox-rect {
-  stroke: #ffffff;
+  stroke-width: 4px;
 }
 
 .bbox-rect {
-  fill: rgba(0, 230, 118, 0.22);
-  stroke: #00e676;
-  stroke-width: 4px;
+  fill: transparent;
+  stroke-width: 2px;
   vector-effect: non-scaling-stroke;
+  /* transition: fill 120ms ease; */
 }
 
-.bbox-rect.top-match {
-  fill: rgba(255, 215, 0, 0.3);
+.bbox-group.query-match .bbox-rect {
+  stroke: #00e676;
+}
+
+.bbox-group.query-match:hover .bbox-rect {
+  fill: rgba(0, 230, 118, 0.22);
+}
+
+.bbox-group.unmatched .bbox-rect {
   stroke: #ffd700;
-  stroke-width: 5px;
+}
+
+.bbox-group.unmatched:hover .bbox-rect {
+  fill: rgba(255, 215, 0, 0.3);
 }
 
 .card-details {
