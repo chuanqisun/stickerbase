@@ -30,26 +30,15 @@ jobs:
           fetch-depth: 1
           fetch-tags: false
           lfs: false
-          sparse-checkout: apps/stickers-web
-      - name: Cache web assets from Git LFS
-        uses: actions/cache@v4
-        with:
-          path: .git/lfs
-          key: ${{ runner.os }}-git-lfs-${{ hashFiles('apps/stickers-web/public/**') }}
-          restore-keys: |
-            ${{ runner.os }}-git-lfs-
-      - name: Pull web assets from Git LFS
-        env:
-          GIT_LFS_FORCE_PROGRESS: "1"
+          sparse-checkout: |
+            apps/stickers-web
+            data/public.zip
+          sparse-checkout-cone-mode: false
+      - name: Checkout and extract public assets
         run: |
-          git config lfs.concurrenttransfers 4
-          for attempt in 1 2 3; do
-            if timeout --kill-after=30s 5m git lfs pull --include="apps/stickers-web/public/**"; then
-              exit 0
-            fi
-            echo "Git LFS pull attempt ${attempt} failed; retrying with downloaded objects preserved."
-          done
-          exit 1
+          git lfs fetch --include="data/public.zip"
+          git lfs checkout data/public.zip
+          unzip -o data/public.zip -d apps/stickers-web/public
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: npm install, build, and test
