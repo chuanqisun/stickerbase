@@ -315,6 +315,11 @@
   }
 }
 
+.similar-sticker-placeholder {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .similar-sticker-crop {
   width: 100%;
   aspect-ratio: 1;

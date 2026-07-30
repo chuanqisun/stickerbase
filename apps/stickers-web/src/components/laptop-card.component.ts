@@ -97,7 +97,6 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
   const loadSimilarStickers = async (laptopName: string, stickerName: string) => {
     const requestId = ++similarStickersRequestId;
-    similarStickers$.next([]);
 
     const matches = querySimilarStickers(`${laptopName}/${stickerName}`, 12);
     const similarStickers = await Promise.all(
@@ -372,6 +371,19 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     `;
   };
 
+  const renderSimilarStickerGrid = (stickers: SimilarSticker[]) => [
+    ...stickers.map(renderSimilarSticker),
+    ...Array.from(
+      { length: Math.max(0, 6 - stickers.length) },
+      () => html`
+        <div class="similar-sticker similar-sticker-placeholder" aria-hidden="true">
+          <div class="similar-sticker-crop"></div>
+          <span class="similar-sticker-caption"><span>&nbsp;</span></span>
+        </div>
+      `,
+    ),
+  ];
+
   const template = html`
     <div class="laptop-card">
       <div class="card-header">
@@ -452,7 +464,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
                 </div>
                 <section class="similar-stickers" aria-labelledby="similar-stickers-title">
                   <h3 id="similar-stickers-title">Similar stickers</h3>
-                  <div class="similar-stickers-grid">${observe(similarStickers$.pipe(map((stickers) => stickers.map(renderSimilarSticker))))}</div>
+                  <div class="similar-stickers-grid">${observe(similarStickers$.pipe(map(renderSimilarStickerGrid)))}</div>
                 </section>
               `;
             }),
