@@ -40,11 +40,12 @@ jobs:
           GIT_TRANSFER_TRACE: "1"
           GIT_CURL_VERBOSE: "1"
           GIT_LFS_FORCE_PROGRESS: "1"
+          GIT_ATTR_SOURCE: HEAD
         run: |
           set -x
           git lfs version
           git lfs env
-          git lfs ls-files --long data/public.zip
+          git lfs ls-files --long --size --include="data/public.zip"
           git lfs fetch --include="data/public.zip"
           git config --local lfs.forceprogress true
           echo "Checking out data/public.zip with forced progress output"
