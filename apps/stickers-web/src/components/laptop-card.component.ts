@@ -22,14 +22,29 @@ type SimilarSticker = {
   bbox: [number, number, number, number];
 };
 
+const sortBoundingBoxesForPaint = (metadata: LaptopMetadata, isMatched: (stickerName: string) => boolean) =>
+  Object.entries(metadata).sort(([leftName, leftBbox], [rightName, rightBbox]) => {
+    const matchOrder = Number(isMatched(leftName)) - Number(isMatched(rightName));
+    if (matchOrder !== 0) return matchOrder;
+
+    const areaOrder = rightBbox[2] * rightBbox[3] - leftBbox[2] * leftBbox[3];
+    if (areaOrder !== 0) return areaOrder;
+    return leftName.localeCompare(rightName, undefined, { numeric: true });
+  });
+
 export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank: number }) => {
   const { matchGroup, rank } = props;
   const metadata$ = new BehaviorSubject<LaptopMetadata | null>(null);
   const naturalSize$ = new BehaviorSubject<{ width: number; height: number } | null>(null);
   const selectedSticker$ = new BehaviorSubject<SelectedSticker | null>(null);
+  const selectedLaptopMetadata$ = new BehaviorSubject<LaptopMetadata>({});
+  const selectedLaptopSize$ = new BehaviorSubject<{ width: number; height: number } | null>(null);
   const similarStickers$ = new BehaviorSubject<SimilarSticker[]>([]);
   const hoveredStickerName$ = new BehaviorSubject<string | null>(null);
+  const isFullStickerView$ = new BehaviorSubject(false);
+  const hasToggledStickerView$ = new BehaviorSubject(false);
   let detailDialog: HTMLDialogElement | undefined;
+  let detailCrop: HTMLElement | undefined;
   let similarStickersRequestId = 0;
 
   const loadMetadata = () => {
@@ -60,6 +75,10 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
   const onDialogRef = (element: Element | undefined) => {
     detailDialog = element instanceof HTMLDialogElement ? element : undefined;
+  };
+
+  const onDetailCropRef = (element: Element | undefined) => {
+    detailCrop = element instanceof HTMLElement ? element : undefined;
   };
 
   const openStickerDetail = (selectedSticker: SelectedSticker) => {
@@ -105,15 +124,52 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     }
   };
 
+  const loadSelectedLaptopMetadata = (laptopName: string, stickerName: string, fallbackBbox: SelectedSticker["bbox"]) => {
+    selectedLaptopMetadata$.next({ [stickerName]: fallbackBbox });
+    void fetchLaptopMetadata(laptopName).then((metadata) => {
+      const selectedSticker = selectedSticker$.value;
+      if (selectedSticker?.laptopName === laptopName && selectedSticker.name === stickerName) {
+        selectedLaptopMetadata$.next(metadata);
+      }
+    });
+  };
+
+  const updateDetailCropGeometry = (image: HTMLImageElement, bbox: SelectedSticker["bbox"]) => {
+    const [bboxX, bboxY, bboxWidth, bboxHeight] = bbox;
+    const crop = image.parentElement;
+    const maxDimension = Math.max(image.naturalWidth, image.naturalHeight);
+    const originX = 50 + ((bboxX + bboxWidth / 2 - image.naturalWidth / 2) / maxDimension) * 100;
+    const originY = 50 + ((bboxY + bboxHeight / 2 - image.naturalHeight / 2) / maxDimension) * 100;
+    crop?.style.setProperty("--focus-left", `${50 - originX}%`);
+    crop?.style.setProperty("--focus-top", `${50 - originY}%`);
+    crop?.style.setProperty("--focus-origin-x", `${originX}%`);
+    crop?.style.setProperty("--focus-origin-y", `${originY}%`);
+    crop?.style.setProperty("--focus-scale", `${maxDimension / Math.max(bboxWidth, bboxHeight)}`);
+  };
+
   const selectSimilarSticker = (sticker: SimilarSticker) => {
+    hasToggledStickerView$.next(false);
+    isFullStickerView$.next(false);
+    selectedLaptopSize$.next(null);
     selectedSticker$.next({
       laptopName: sticker.laptopName,
       name: sticker.stickerName,
       similarity: sticker.similarity,
       bbox: sticker.bbox,
     });
+    loadSelectedLaptopMetadata(sticker.laptopName, sticker.stickerName, sticker.bbox);
     void loadSimilarStickers(sticker.laptopName, sticker.stickerName);
     detailDialog?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const selectStickerFromFullView = (sticker: SelectedSticker) => {
+    const image = detailCrop?.querySelector("img");
+    if (image instanceof HTMLImageElement) {
+      updateDetailCropGeometry(image, sticker.bbox);
+    }
+    selectedSticker$.next(sticker);
+    void loadSimilarStickers(sticker.laptopName, sticker.name);
+    isFullStickerView$.next(false);
   };
 
   const overlay$ = combineLatest([metadata$, naturalSize$, hoveredStickerName$]);
@@ -131,6 +187,10 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
       const sticker = matchGroup.stickers.find((candidate) => candidate.stickerName === route.stickerName);
 
+      hasToggledStickerView$.next(false);
+      isFullStickerView$.next(false);
+      selectedLaptopMetadata$.next(metadata);
+      selectedLaptopSize$.next(naturalSize);
       selectedSticker$.next({
         laptopName: matchGroup.laptopName,
         name: route.stickerName,
@@ -150,10 +210,11 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
     const { width, height } = size;
     const matchesByName = new Map(matchGroup.stickers.map((sticker) => [sticker.stickerName, sticker]));
+    const boxesInPaintOrder = sortBoundingBoxesForPaint(meta, (stickerName) => matchesByName.has(stickerName));
 
     return html`
       <svg class="bbox-overlay-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
-        ${Object.entries(meta).map(([stickerName, bbox]) => {
+        ${boxesInPaintOrder.map(([stickerName, bbox]) => {
           if (!bbox || bbox.length < 4) return svg``;
 
           const [x, y, w, h] = bbox;
@@ -180,6 +241,60 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
               }}
             >
               <rect class="bbox-rect" x=${x} y=${y} width=${w} height=${h} rx="4"></rect>
+            </g>
+          `;
+        })}
+      </svg>
+    `;
+  };
+
+  const renderDetailOverlay = (selectedSticker: SelectedSticker, data: [LaptopMetadata, { width: number; height: number } | null]) => {
+    const [metadata, size] = data;
+    if (!size) return html``;
+    const matchesByName = new Set(
+      selectedSticker.laptopName === matchGroup.laptopName
+        ? matchGroup.stickers.map((sticker) => sticker.stickerName)
+        : selectedSticker.similarity === null
+          ? []
+          : [selectedSticker.name],
+    );
+    const boxesInPaintOrder = sortBoundingBoxesForPaint(metadata, (stickerName) => matchesByName.has(stickerName));
+
+    return html`
+      <svg class="sticker-detail-overlay" viewBox="0 0 ${size.width} ${size.height}" preserveAspectRatio="xMidYMid meet">
+        ${boxesInPaintOrder.map(([stickerName, bbox]) => {
+          if (!bbox || bbox.length < 4) return svg``;
+
+          const [x, y, width, height] = bbox;
+          return svg`
+            <g
+              class="bbox-group unmatched detail-bbox-group"
+              role="button"
+              tabindex="0"
+              aria-label="Focus ${stickerName}"
+              @click=${(event: MouseEvent) => {
+                event.stopPropagation();
+                selectStickerFromFullView({
+                  laptopName: selectedSticker.laptopName,
+                  name: stickerName,
+                  similarity: stickerName === selectedSticker.name ? selectedSticker.similarity : null,
+                  bbox: [x, y, width, height],
+                });
+              }}
+              @keydown=${(event: KeyboardEvent) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  selectStickerFromFullView({
+                    laptopName: selectedSticker.laptopName,
+                    name: stickerName,
+                    similarity: stickerName === selectedSticker.name ? selectedSticker.similarity : null,
+                    bbox: [x, y, width, height],
+                  });
+                }
+              }}
+            >
+              <rect class="bbox-rect" x=${x} y=${y} width=${width} height=${height} rx="4"></rect>
             </g>
           `;
         })}
@@ -289,14 +404,10 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
             map((selectedSticker) => {
               if (!selectedSticker) return html``;
 
-              const [x, y, width, height] = selectedSticker.bbox;
-              const cropStyle = `aspect-ratio: ${width} / ${height}`;
               const onMainCropLoad = (event: Event) => {
                 const image = event.currentTarget as HTMLImageElement;
-                image.style.width = `${(image.naturalWidth / width) * 100}%`;
-                image.style.height = `${(image.naturalHeight / height) * 100}%`;
-                image.style.left = `${(-x / width) * 100}%`;
-                image.style.top = `${(-y / height) * 100}%`;
+                selectedLaptopSize$.next({ width: image.naturalWidth, height: image.naturalHeight });
+                updateDetailCropGeometry(image, selectedSticker.bbox);
               };
 
               return html`
@@ -309,11 +420,32 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
                     <button type="submit" class="sticker-detail-close" aria-label="Close sticker detail" title="Close">&times;</button>
                   </form>
                 </div>
-                <div class="sticker-detail-crop" style=${cropStyle}>
+                <div
+                  ${ref(onDetailCropRef)}
+                  class="sticker-detail-crop ${observe(
+                    combineLatest([isFullStickerView$, hasToggledStickerView$]).pipe(
+                      map(([isFullView, hasToggled]) => `${isFullView ? "full-view" : "focus-view"} ${hasToggled ? "view-transition-enabled" : ""}`),
+                    ),
+                  )}"
+                  role="button"
+                  tabindex="0"
+                  aria-label=${observe(isFullStickerView$.pipe(map((isFullView) => (isFullView ? "Show focused sticker view" : "Show full laptop view"))))}
+                  @click=${() => {
+                    hasToggledStickerView$.next(true);
+                    isFullStickerView$.next(!isFullStickerView$.value);
+                  }}
+                  @keydown=${(event: KeyboardEvent) => {
+                    if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+                    event.preventDefault();
+                    hasToggledStickerView$.next(true);
+                    isFullStickerView$.next(!isFullStickerView$.value);
+                  }}
+                >
                   ${keyed(
-                    `${selectedSticker.laptopName}/${selectedSticker.name}`,
+                    selectedSticker.laptopName,
                     html`<img src="/images/${selectedSticker.laptopName}.webp" alt="Crop of ${selectedSticker.name}" @load=${onMainCropLoad} />`,
                   )}
+                  ${observe(combineLatest([selectedLaptopMetadata$, selectedLaptopSize$]).pipe(map((data) => renderDetailOverlay(selectedSticker, data))))}
                 </div>
                 <section class="similar-stickers" aria-labelledby="similar-stickers-title">
                   <h3 id="similar-stickers-title">Similar stickers</h3>

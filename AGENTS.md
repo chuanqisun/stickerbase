@@ -7,3 +7,5 @@ When you are done with implementation, do NOT run the code. Instead, let user ru
 
 Follow [component-guide](apps/stickers-web/docs/component.md) to implement UI with rxjs and lit
 Follow [style-guide](apps/stickers-web/docs/style.md) to implement styles
+
+Do NOT use playwright to test the UI unless requested by the user.

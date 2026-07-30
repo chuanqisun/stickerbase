@@ -204,15 +204,83 @@
 
 .sticker-detail-crop {
   position: relative;
+  display: block;
   width: 100%;
   max-height: calc(90vh - 5rem);
+  padding: 0;
   overflow: hidden;
+  border: 0;
   background: #0d1117;
+  cursor: zoom-out;
+  aspect-ratio: 1;
+
+  img,
+  .sticker-detail-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: var(--focus-left);
+    top: var(--focus-top);
+    transform-origin: var(--focus-origin-x) var(--focus-origin-y);
+    transform: scale(var(--focus-scale));
+  }
 
   img {
-    position: absolute;
     max-width: none;
-    object-fit: fill;
+    object-fit: contain;
+  }
+
+  &.view-transition-enabled img,
+  &.view-transition-enabled .sticker-detail-overlay {
+    transition:
+      transform 300ms ease,
+      left 300ms ease,
+      top 300ms ease;
+  }
+
+  &.full-view {
+    cursor: zoom-in;
+
+    img,
+    .sticker-detail-overlay {
+      left: 0;
+      top: 0;
+      transform: scale(1);
+    }
+
+    .sticker-detail-overlay {
+      pointer-events: none;
+      opacity: 1;
+
+      .detail-bbox-group {
+        pointer-events: all;
+      }
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: -2px;
+  }
+}
+
+.sticker-detail-overlay {
+  pointer-events: none;
+  opacity: 0;
+
+  .detail-bbox-group {
+    pointer-events: none;
+
+    .bbox-rect {
+      stroke-opacity: 0;
+    }
+
+    &:hover .bbox-rect,
+    &:focus .bbox-rect {
+      fill: rgba(255, 215, 0, 0.3);
+      stroke: #ffd700;
+      stroke-opacity: 1;
+    }
   }
 }
 
