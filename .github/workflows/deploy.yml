@@ -39,6 +39,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-git-lfs-
       - name: Pull web assets from Git LFS
+        env:
+          GIT_LFS_FORCE_PROGRESS: "1"
         run: git lfs pull --include="apps/stickers-web/public/**"
       - name: Setup Pages
         uses: actions/configure-pages@v5
