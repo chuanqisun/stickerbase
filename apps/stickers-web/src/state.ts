@@ -42,11 +42,7 @@ apiKey$.subscribe((key) => {
 /**
  * Group raw sticker search items into laptop images and sort by highest similarity score.
  */
-export function groupResultsByLaptop(
-  items: ResultItem[],
-  topK: number,
-  minSimilarity: number
-): LaptopMatchGroup[] {
+export function groupResultsByLaptop(items: ResultItem[], topK: number, minSimilarity: number): LaptopMatchGroup[] {
   const groupsMap = new Map<string, StickerMatch[]>();
 
   for (const item of items) {

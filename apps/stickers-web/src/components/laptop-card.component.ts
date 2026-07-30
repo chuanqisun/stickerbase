@@ -33,11 +33,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     const { width, height } = size;
 
     return html`
-      <svg
-        class="bbox-overlay-svg"
-        viewBox="0 0 ${width} ${height}"
-        preserveAspectRatio="xMidYMid meet"
-      >
+      <svg class="bbox-overlay-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
         <defs>
           <filter id="bg-badge" x="-10%" y="-10%" width="120%" height="120%">
             <feFlood flood-color="#000000" flood-opacity="0.85" result="bg"></feFlood>
@@ -61,30 +57,9 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
           return html`
             <g class="bbox-group">
-              <rect
-                class="bbox-rect ${isTopMatch ? "top-match" : ""}"
-                x=${x}
-                y=${y}
-                width=${w}
-                height=${h}
-                rx="4"
-              ></rect>
-              <rect
-                x=${labelX - 4}
-                y=${labelY - 18}
-                width=${pctText.length * 9 + 12}
-                height="22"
-                rx="3"
-                fill="rgba(0, 0, 0, 0.85)"
-              ></rect>
-              <text
-                x=${labelX}
-                y=${labelY}
-                fill=${isTopMatch ? "#ffd700" : "#00e676"}
-                font-size="14"
-                font-family="system-ui, sans-serif"
-                font-weight="bold"
-              >
+              <rect class="bbox-rect ${isTopMatch ? "top-match" : ""}" x=${x} y=${y} width=${w} height=${h} rx="4"></rect>
+              <rect x=${labelX - 4} y=${labelY - 18} width=${pctText.length * 9 + 12} height="22" rx="3" fill="rgba(0, 0, 0, 0.85)"></rect>
+              <text x=${labelX} y=${labelY} fill=${isTopMatch ? "#ffd700" : "#00e676"} font-size="14" font-family="system-ui, sans-serif" font-weight="bold">
                 ${pctText}
               </text>
             </g>
@@ -102,23 +77,13 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
         <span class="rank-badge">#${rank}</span>
         <span class="laptop-title" title=${matchGroup.laptopName}>${matchGroup.laptopName}</span>
         <div class="scores-badge-group">
-          <span class="top-score-badge" title="Highest sticker match score in this image">
-            ${topMatchScorePct}
-          </span>
-          <span class="match-count-badge">
-            ${matchGroup.stickers.length} ${matchGroup.stickers.length === 1 ? "sticker" : "stickers"}
-          </span>
+          <span class="top-score-badge" title="Highest sticker match score in this image"> ${topMatchScorePct} </span>
+          <span class="match-count-badge"> ${matchGroup.stickers.length} ${matchGroup.stickers.length === 1 ? "sticker" : "stickers"} </span>
         </div>
       </div>
 
       <div class="card-media-viewport">
-        <img
-          class="laptop-img"
-          src="/images/${matchGroup.laptopName}.webp"
-          alt=${matchGroup.laptopName}
-          loading="lazy"
-          @load=${onImgLoad}
-        />
+        <img class="laptop-img" src="/images/${matchGroup.laptopName}.webp" alt=${matchGroup.laptopName} loading="lazy" @load=${onImgLoad} />
         ${observe(overlay$.pipe(map(renderOverlay)))}
       </div>
 
@@ -129,7 +94,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
               <span>${s.stickerName}</span>
               <span class="sticker-score">${(s.similarity * 100).toFixed(1)}%</span>
             </span>
-          `
+          `,
         )}
       </div>
     </div>

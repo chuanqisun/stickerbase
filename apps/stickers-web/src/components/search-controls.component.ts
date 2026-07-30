@@ -41,12 +41,7 @@ export const SearchControlsComponent = component(() => {
           @input=${onTextChange}
           @keydown=${onKeydown}
         ></textarea>
-        <button
-          type="button"
-          class="match-button"
-          ?disabled=${observe(isSearching$)}
-          @click=${() => triggerMatch$.next()}
-        >
+        <button type="button" class="match-button" ?disabled=${observe(isSearching$)} @click=${() => triggerMatch$.next()}>
           ${observe(isSearching$.pipe(map((searching) => (searching ? "Searching..." : "Match"))))}
         </button>
       </div>
@@ -55,28 +50,13 @@ export const SearchControlsComponent = component(() => {
         <div class="sliders-group">
           <div class="slider-control">
             <label for="top-k-slider">Top Laptops (K):</label>
-            <input
-              id="top-k-slider"
-              type="range"
-              min="1"
-              max="100"
-              .value=${observe(topKStr$)}
-              @input=${onTopKChange}
-            />
+            <input id="top-k-slider" type="range" min="1" max="100" .value=${observe(topKStr$)} @input=${onTopKChange} />
             <span class="slider-val">${observe(topK$)}</span>
           </div>
 
           <div class="slider-control">
             <label for="min-sim-slider">Min Similarity:</label>
-            <input
-              id="min-sim-slider"
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              .value=${observe(minSimStr$)}
-              @input=${onMinSimChange}
-            />
+            <input id="min-sim-slider" type="range" min="0" max="1" step="0.01" .value=${observe(minSimStr$)} @input=${onMinSimChange} />
             <span class="slider-val">${observe(minSimPct$)}</span>
           </div>
         </div>
@@ -92,12 +72,12 @@ export const SearchControlsComponent = component(() => {
                         map((searching) =>
                           searching
                             ? html`<span>Searching with Gemini embeddings...</span>`
-                            : html`<span>Live search active as you type & adjust filters</span>`
-                        )
-                      )
-                    )
-              )
-            )
+                            : html`<span>Live search active as you type & adjust filters</span>`,
+                        ),
+                      ),
+                    ),
+              ),
+            ),
           )}
         </div>
       </div>

@@ -1,30 +1,11 @@
 import { html, render } from "lit";
-import {
-  catchError,
-  debounceTime,
-  distinctUntilChanged,
-  filter,
-  from,
-  merge,
-  switchMap,
-  tap,
-} from "rxjs";
+import { catchError, debounceTime, distinctUntilChanged, filter, from, merge, switchMap, tap } from "rxjs";
 import { HeaderComponent } from "./components/header.component";
 import { ResultsViewComponent } from "./components/results-view.component";
 import { SearchControlsComponent } from "./components/search-controls.component";
 import { embedQueryText } from "./services/gemini.service";
 import { dbState$, initVectorDb, queryVectorDb } from "./services/vector-db.service";
-import {
-  apiKey$,
-  groupResultsByLaptop,
-  isSearching$,
-  minSimilarity$,
-  queryText$,
-  searchError$,
-  searchResults$,
-  topK$,
-  triggerMatch$,
-} from "./state";
+import { apiKey$, groupResultsByLaptop, isSearching$, minSimilarity$, queryText$, searchError$, searchResults$, topK$, triggerMatch$ } from "./state";
 import "./style.css";
 import { component, withEffect } from "./ui-kit";
 
@@ -87,25 +68,16 @@ async function executeSearch(): Promise<void> {
 // Main App Root Component
 const App = component(() => {
   // RxJS pipeline reacting to live user inputs
-  const queryDebounced$ = queryText$.pipe(
-    debounceTime(300),
-    distinctUntilChanged()
-  );
+  const queryDebounced$ = queryText$.pipe(debounceTime(300), distinctUntilChanged());
 
-  const searchTrigger$ = merge(
-    queryDebounced$,
-    topK$,
-    minSimilarity$,
-    triggerMatch$,
-    dbState$.pipe(filter((s) => s.status === "ready"))
-  );
+  const searchTrigger$ = merge(queryDebounced$, topK$, minSimilarity$, triggerMatch$, dbState$.pipe(filter((s) => s.status === "ready")));
 
   const searchEffect$ = searchTrigger$.pipe(
     switchMap(() => from(executeSearch())),
     catchError((err, caught) => {
       console.error("Search effect error:", err);
       return caught;
-    })
+    }),
   );
 
   // Initialize Vector DB on app load
@@ -113,7 +85,7 @@ const App = component(() => {
     tap({
       error: (err) => console.error("Failed to initialize vector database:", err),
     }),
-    catchError((_, caught) => caught)
+    catchError((_, caught) => caught),
   );
 
   const combinedEffects$ = merge(searchEffect$, dbInitEffect$);
@@ -121,10 +93,7 @@ const App = component(() => {
   const template = html`
     <div id="app">
       ${HeaderComponent()}
-      <main class="main-layout">
-        ${SearchControlsComponent()}
-        ${ResultsViewComponent()}
-      </main>
+      <main class="main-layout">${SearchControlsComponent()} ${ResultsViewComponent()}</main>
     </div>
   `;
 
@@ -134,4 +103,3 @@ const App = component(() => {
 // Mount application into DOM
 const rootEl = document.getElementById("app") || document.body;
 render(App(), rootEl);
-

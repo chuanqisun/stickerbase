@@ -36,17 +36,13 @@ export const HeaderComponent = component(() => {
         case "error":
           return html`<span class="status-badge warn" title=${db.errorMessage || "Error loading DB"}>DB Error</span>`;
       }
-    })
+    }),
   );
 
   const inputType$ = showApiKey$.pipe(map((show) => (show ? "text" : "password")));
   const keyToggleText$ = showApiKey$.pipe(map((show) => (show ? "Hide" : "Show")));
   const keyBadge$ = apiKey$.pipe(
-    map((key) =>
-      key
-        ? html`<span class="status-badge ready">API Key Set</span>`
-        : html`<span class="status-badge warn">API Key Required</span>`
-    )
+    map((key) => (key ? html`<span class="status-badge ready">API Key Set</span>` : html`<span class="status-badge warn">API Key Required</span>`)),
   );
 
   return html`
@@ -74,13 +70,7 @@ export const HeaderComponent = component(() => {
             .value=${observe(apiKey$)}
             @input=${onKeyInput}
           />
-          <button
-            type="button"
-            class="api-key-toggle-btn"
-            @click=${toggleShowKey}
-          >
-            ${observe(keyToggleText$)}
-          </button>
+          <button type="button" class="api-key-toggle-btn" @click=${toggleShowKey}>${observe(keyToggleText$)}</button>
         </div>
 
         ${observe(keyBadge$)}

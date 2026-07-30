@@ -15,9 +15,7 @@ export const ResultsViewComponent = component(() => {
         return html`
           <div class="empty-state">
             <div class="empty-state-title">API Key Required</div>
-            <p class="empty-state-text">
-              Please enter your Gemini API Key in the header bar above to generate query embeddings.
-            </p>
+            <p class="empty-state-text">Please enter your Gemini API Key in the header bar above to generate query embeddings.</p>
           </div>
         `;
       }
@@ -35,9 +33,7 @@ export const ResultsViewComponent = component(() => {
         return html`
           <div class="empty-state">
             <div class="empty-state-title">Search Laptop Stickers</div>
-            <p class="empty-state-text">
-              Type any description in the prompt box above to find matching laptop sticker images in real time.
-            </p>
+            <p class="empty-state-text">Type any description in the prompt box above to find matching laptop sticker images in real time.</p>
           </div>
         `;
       }
@@ -57,16 +53,10 @@ export const ResultsViewComponent = component(() => {
         <div class="results-summary">
           Found ${results.length} matching laptop ${results.length === 1 ? "image" : "images"} sorted by highest sticker similarity match score:
         </div>
-        <div class="results-grid">
-          ${results.map((group, idx) => LaptopCard({ matchGroup: group, rank: idx + 1 }))}
-        </div>
+        <div class="results-grid">${results.map((group, idx) => LaptopCard({ matchGroup: group, rank: idx + 1 }))}</div>
       `;
-    })
+    }),
   );
 
-  return html`
-    <div class="results-view">
-      ${observe(state$)}
-    </div>
-  `;
+  return html` <div class="results-view">${observe(state$)}</div> `;
 });
