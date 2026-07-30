@@ -1,5 +1,5 @@
 import { html, render } from "lit";
-import { catchError, debounceTime, distinctUntilChanged, filter, from, merge, switchMap, tap } from "rxjs";
+import { catchError, debounceTime, distinctUntilChanged, EMPTY, filter, from, merge, switchMap, tap } from "rxjs";
 import { HeaderComponent } from "./components/header.component";
 import { ResultsViewComponent } from "./components/results-view.component";
 import { SearchControlsComponent } from "./components/search-controls.component";
@@ -105,10 +105,10 @@ const App = component(() => {
 
   // Initialize Vector DB on app load
   const dbInitEffect$ = from(initVectorDb()).pipe(
-    tap({
-      error: (err) => console.error("Failed to initialize vector database:", err),
+    catchError((error) => {
+      console.error("Failed to initialize vector database:", error);
+      return EMPTY;
     }),
-    catchError((_, caught) => caught),
   );
 
   const combinedEffects$ = merge(searchEffect$, dbInitEffect$);

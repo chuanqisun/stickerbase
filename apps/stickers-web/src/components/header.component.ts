@@ -29,8 +29,10 @@ export const HeaderComponent = component(() => {
           return html`<span class="db-status">Loading vectors into WASM...</span>`;
         case "ready":
           return null;
-        case "error":
-          return html`<span class="status-badge warn" title=${db.errorMessage || "Error loading DB"}>DB Error</span>`;
+        case "error": {
+          const errorMessage = db.errorMessage || "Unknown error";
+          return html`<span class="status-badge warn" title=${errorMessage}>DB initialization failed: ${errorMessage}</span>`;
+        }
       }
     }),
   );

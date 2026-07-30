@@ -8,7 +8,7 @@ const metadataCache = new Map<string, Promise<LaptopMetadata>>();
  */
 export function fetchLaptopMetadata(laptopName: string): Promise<LaptopMetadata> {
   if (!metadataCache.has(laptopName)) {
-    const promise = fetch(`/images/${laptopName}.json`)
+    const promise = fetch(`${import.meta.env.BASE_URL}images/${laptopName}.json`)
       .then((res) => {
         if (!res.ok) {
           return {};

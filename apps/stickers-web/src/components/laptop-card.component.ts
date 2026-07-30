@@ -25,6 +25,7 @@ type SimilarSticker = {
 const formatIndex = (value: string, length: number) => (value.match(/^\d+/)?.[0] ?? "0").padStart(length, "0");
 const formatLaptopTitle = (laptopName: string) => `#${formatIndex(laptopName, 4)}`;
 const formatStickerTitle = (laptopName: string, stickerName: string) => `${formatLaptopTitle(laptopName)}-${formatIndex(stickerName, 2)}`;
+const imageBaseUrl = `${import.meta.env.BASE_URL}images/`;
 
 const sortBoundingBoxesForPaint = (metadata: LaptopMetadata, isMatched: (stickerName: string) => boolean) =>
   Object.entries(metadata).sort(([leftName, leftBbox], [rightName, rightBbox]) => {
@@ -365,7 +366,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
       <button class="similar-sticker" type="button" aria-label="View ${stickerTitle}" @click=${() => selectSimilarSticker(sticker)}>
         <div class="similar-sticker-crop">
           <div class="similar-sticker-crop-window" style="width: ${cropWidth}; aspect-ratio: ${width} / ${height}">
-            <img src="/images/${sticker.laptopName}.webp" alt="Crop of ${stickerTitle}" loading="lazy" @load=${onCropLoad} />
+            <img src="${imageBaseUrl}${sticker.laptopName}.webp" alt="Crop of ${stickerTitle}" loading="lazy" @load=${onCropLoad} />
           </div>
         </div>
         <span class="similar-sticker-caption">
@@ -406,7 +407,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
         <img
           ${ref(onImgRef)}
           class="laptop-img"
-          src="/images/${matchGroup.laptopName}.webp"
+          src="${imageBaseUrl}${matchGroup.laptopName}.webp"
           alt=${formatLaptopTitle(matchGroup.laptopName)}
           loading=${stickerDetailRoute$.value?.laptopName === matchGroup.laptopName ? "eager" : "lazy"}
           @load=${onImgLoad}
@@ -461,7 +462,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
                   ${keyed(
                     selectedSticker.laptopName,
                     html`<img
-                      src="/images/${selectedSticker.laptopName}.webp"
+                      src="${imageBaseUrl}${selectedSticker.laptopName}.webp"
                       alt="Crop of ${formatStickerTitle(selectedSticker.laptopName, selectedSticker.name)}"
                       @load=${onMainCropLoad}
                     />`,

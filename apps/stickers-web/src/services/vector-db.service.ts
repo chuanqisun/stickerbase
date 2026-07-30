@@ -33,7 +33,7 @@ export async function initVectorDb(): Promise<DB> {
     });
 
     const db = await DB.open({ dimensions: 1536 });
-    const response = await fetch("/embeddings.bin");
+    const response = await fetch(`${import.meta.env.BASE_URL}embeddings.bin`);
 
     if (!response.ok) {
       throw new Error(`Failed to load embeddings index: ${response.status} ${response.statusText}`);
