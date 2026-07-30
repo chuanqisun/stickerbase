@@ -43,6 +43,10 @@ export const HeaderComponent = component(() => {
     <header class="app-header">
       <div class="header-brand">
         <h1 class="header-title">Stickerbase</h1>
+        <p class="header-subtitle">
+          an interactive explorer for
+          <a href="https://stickertop.art/" target="_blank" rel="noopener noreferrer">stickertop</a>
+        </p>
       </div>
 
       <div class="header-controls">

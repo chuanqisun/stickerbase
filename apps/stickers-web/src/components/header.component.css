@@ -13,6 +13,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  flex-wrap: wrap;
 }
 
 .header-title {
@@ -21,6 +22,16 @@
   margin: 0;
   color: var(--text-primary);
   letter-spacing: -0.01em;
+}
+
+.header-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.header-subtitle a {
+  color: inherit;
 }
 
 .header-controls {
