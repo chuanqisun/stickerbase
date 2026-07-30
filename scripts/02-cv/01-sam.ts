@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { fal } from "@fal-ai/client";
 import fsSync from "fs";
 import fs from "fs/promises";
