@@ -2,16 +2,23 @@ import { html, svg } from "lit";
 import { ref } from "lit/directives/ref.js";
 import { BehaviorSubject, combineLatest, map, tap } from "rxjs";
 import { fetchLaptopMetadata, type LaptopMetadata } from "../services/metadata.service";
+import { querySimilarStickers } from "../services/vector-db.service";
 import { clearStickerDetailRoute, openStickerDetailRoute, stickerDetailRoute$, type LaptopMatchGroup } from "../state";
 import { component, observe, withEffect } from "../ui-kit";
 import "./laptop-card.component.css";
 
 type SelectedSticker = {
+  laptopName: string;
   name: string;
   similarity: number;
   bbox: [number, number, number, number];
-  imageWidth: number;
-  imageHeight: number;
+};
+
+type SimilarSticker = {
+  laptopName: string;
+  stickerName: string;
+  similarity: number;
+  bbox: [number, number, number, number];
 };
 
 export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank: number }) => {
@@ -19,7 +26,9 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
   const metadata$ = new BehaviorSubject<LaptopMetadata | null>(null);
   const naturalSize$ = new BehaviorSubject<{ width: number; height: number } | null>(null);
   const selectedSticker$ = new BehaviorSubject<SelectedSticker | null>(null);
+  const similarStickers$ = new BehaviorSubject<SimilarSticker[]>([]);
   let detailDialog: HTMLDialogElement | undefined;
+  let similarStickersRequestId = 0;
 
   // Fetch bounding box metadata for this laptop on mount
   fetchLaptopMetadata(matchGroup.laptopName).then((meta) => {
@@ -61,6 +70,46 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     }
   };
 
+  const loadSimilarStickers = async (laptopName: string, stickerName: string) => {
+    const requestId = ++similarStickersRequestId;
+    similarStickers$.next([]);
+
+    const matches = querySimilarStickers(`${laptopName}/${stickerName}`, 12);
+    const similarStickers = await Promise.all(
+      matches.map(async (match): Promise<SimilarSticker | null> => {
+        const lastSlashIndex = match.key.lastIndexOf("/");
+        if (lastSlashIndex === -1) return null;
+
+        const laptopName = match.key.substring(0, lastSlashIndex);
+        const similarStickerName = match.key.substring(lastSlashIndex + 1);
+        const bbox = (await fetchLaptopMetadata(laptopName))[similarStickerName];
+        if (!bbox) return null;
+
+        return {
+          laptopName,
+          stickerName: similarStickerName,
+          similarity: match.similarity,
+          bbox,
+        };
+      }),
+    );
+
+    if (requestId === similarStickersRequestId) {
+      similarStickers$.next(similarStickers.filter((sticker): sticker is SimilarSticker => sticker !== null).slice(0, 6));
+    }
+  };
+
+  const selectSimilarSticker = (sticker: SimilarSticker) => {
+    selectedSticker$.next({
+      laptopName: sticker.laptopName,
+      name: sticker.stickerName,
+      similarity: sticker.similarity,
+      bbox: sticker.bbox,
+    });
+    void loadSimilarStickers(sticker.laptopName, sticker.stickerName);
+    detailDialog?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const overlay$ = combineLatest([metadata$, naturalSize$]);
 
   const detailRouteEffect$ = combineLatest([stickerDetailRoute$, metadata$, naturalSize$]).pipe(
@@ -76,12 +125,12 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
       if (!sticker || !bbox || !naturalSize || !detailDialog) return;
 
       selectedSticker$.next({
+        laptopName: matchGroup.laptopName,
         name: sticker.stickerName,
         similarity: sticker.similarity,
         bbox,
-        imageWidth: naturalSize.width,
-        imageHeight: naturalSize.height,
       });
+      void loadSimilarStickers(matchGroup.laptopName, sticker.stickerName);
       if (!detailDialog.open) detailDialog.showModal();
     }),
   );
@@ -113,11 +162,10 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
           const isTopMatch = idx === 0;
           const pctText = `${(sticker.similarity * 100).toFixed(1)}%`;
           const selectedSticker: SelectedSticker = {
+            laptopName: matchGroup.laptopName,
             name: sticker.stickerName,
             similarity: sticker.similarity,
             bbox: [x, y, w, h],
-            imageWidth: width,
-            imageHeight: height,
           };
 
           // Label placement logic: above bbox if enough space, else inside top-left
@@ -151,6 +199,29 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
   };
 
   const topMatchScorePct = `${(matchGroup.maxSimilarity * 100).toFixed(1)}%`;
+
+  const renderSimilarSticker = (sticker: SimilarSticker) => {
+    const [x, y, width, height] = sticker.bbox;
+    const onCropLoad = (event: Event) => {
+      const image = event.currentTarget as HTMLImageElement;
+      image.style.width = `${(image.naturalWidth / width) * 100}%`;
+      image.style.height = `${(image.naturalHeight / height) * 100}%`;
+      image.style.left = `${(-x / width) * 100}%`;
+      image.style.top = `${(-y / height) * 100}%`;
+    };
+
+    return html`
+      <button class="similar-sticker" type="button" aria-label="View ${sticker.stickerName}" @click=${() => selectSimilarSticker(sticker)}>
+        <div class="similar-sticker-crop" style="aspect-ratio: ${width} / ${height}">
+          <img src="/images/${sticker.laptopName}.webp" alt="Crop of ${sticker.stickerName}" loading="lazy" @load=${onCropLoad} />
+        </div>
+        <span class="similar-sticker-caption">
+          <span title=${sticker.stickerName}>${sticker.stickerName}</span>
+          <strong>${(sticker.similarity * 100).toFixed(1)}%</strong>
+        </span>
+      </button>
+    `;
+  };
 
   const template = html`
     <div class="laptop-card">
@@ -194,12 +265,13 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
               const [x, y, width, height] = selectedSticker.bbox;
               const cropStyle = `aspect-ratio: ${width} / ${height}`;
-              const imageStyle = [
-                `width: ${(selectedSticker.imageWidth / width) * 100}%`,
-                `height: ${(selectedSticker.imageHeight / height) * 100}%`,
-                `left: ${(-x / width) * 100}%`,
-                `top: ${(-y / height) * 100}%`,
-              ].join("; ");
+              const onMainCropLoad = (event: Event) => {
+                const image = event.currentTarget as HTMLImageElement;
+                image.style.width = `${(image.naturalWidth / width) * 100}%`;
+                image.style.height = `${(image.naturalHeight / height) * 100}%`;
+                image.style.left = `${(-x / width) * 100}%`;
+                image.style.top = `${(-y / height) * 100}%`;
+              };
 
               return html`
                 <div class="sticker-detail-header">
@@ -212,8 +284,12 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
                   </form>
                 </div>
                 <div class="sticker-detail-crop" style=${cropStyle}>
-                  <img src="/images/${matchGroup.laptopName}.webp" alt="Crop of ${selectedSticker.name}" style=${imageStyle} />
+                  <img src="/images/${selectedSticker.laptopName}.webp" alt="Crop of ${selectedSticker.name}" @load=${onMainCropLoad} />
                 </div>
+                <section class="similar-stickers" aria-labelledby="similar-stickers-title">
+                  <h3 id="similar-stickers-title">Similar stickers</h3>
+                  <div class="similar-stickers-grid">${observe(similarStickers$.pipe(map((stickers) => stickers.map(renderSimilarSticker))))}</div>
+                </section>
               `;
             }),
           ),

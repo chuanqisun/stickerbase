@@ -137,6 +137,7 @@
   width: min(90vw, 720px);
   max-height: 90vh;
   padding: 0;
+  overflow-y: auto;
   color: var(--text-primary);
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
@@ -190,5 +191,75 @@
     position: absolute;
     max-width: none;
     object-fit: fill;
+  }
+}
+
+.similar-stickers {
+  padding: var(--spacing-md);
+
+  h3 {
+    margin: 0 0 var(--spacing-sm);
+    font-family: monospace;
+    font-size: 0.875rem;
+  }
+}
+
+.similar-stickers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.similar-sticker {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 2px;
+  }
+}
+
+.similar-sticker-crop {
+  position: relative;
+  width: 100%;
+  max-height: 10rem;
+  overflow: hidden;
+  background: #0d1117;
+
+  img {
+    position: absolute;
+    max-width: none;
+    object-fit: fill;
+  }
+}
+
+.similar-sticker-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  padding-top: var(--spacing-xs);
+  font-family: monospace;
+  font-size: 0.6875rem;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: #00a844;
+  }
+}
+
+@media (max-width: 520px) {
+  .similar-stickers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

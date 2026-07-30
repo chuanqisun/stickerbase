@@ -113,3 +113,15 @@ export function queryVectorDb(queryVector: number[], limit: number, minSimilarit
     minSimilarity,
   });
 }
+
+export function querySimilarStickers(stickerKey: string, limit: number): ResultItem[] {
+  if (!dbInstance) return [];
+
+  const stickerVector = dbInstance.get(stickerKey);
+  if (!stickerVector) return [];
+
+  return dbInstance
+    .query(stickerVector, { limit: limit + 1 })
+    .filter((item) => item.key !== stickerKey)
+    .slice(0, limit);
+}
