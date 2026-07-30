@@ -35,9 +35,20 @@ jobs:
             data/public.zip
           sparse-checkout-cone-mode: false
       - name: Checkout and extract public assets
+        env:
+          GIT_TRACE: "1"
+          GIT_TRANSFER_TRACE: "1"
+          GIT_CURL_VERBOSE: "1"
+          GIT_LFS_FORCE_PROGRESS: "1"
         run: |
+          set -x
+          git lfs version
+          git lfs env
+          git lfs ls-files --long data/public.zip
           git lfs fetch --include="data/public.zip"
           git lfs checkout data/public.zip
+          git lfs status
+          ls -lh data/public.zip
           unzip -o data/public.zip -d apps/stickers-web/public
       - name: Setup Pages
         uses: actions/configure-pages@v5
