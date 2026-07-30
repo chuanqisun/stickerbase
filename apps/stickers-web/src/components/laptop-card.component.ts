@@ -1,4 +1,5 @@
 import { html, svg } from "lit";
+import { ref } from "lit/directives/ref.js";
 import { BehaviorSubject, combineLatest, map } from "rxjs";
 import { fetchLaptopMetadata, type LaptopMetadata } from "../services/metadata.service";
 import type { LaptopMatchGroup } from "../state";
@@ -15,10 +16,20 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
     metadata$.next(meta);
   });
 
-  const onImgLoad = (e: Event) => {
-    const img = e.target as HTMLImageElement;
+  const updateNaturalSize = (img: HTMLImageElement) => {
     if (img.naturalWidth && img.naturalHeight) {
-      naturalSize$.next({ width: img.naturalWidth, height: img.naturalHeight });
+      const currentSize = naturalSize$.value;
+      if (currentSize?.width !== img.naturalWidth || currentSize.height !== img.naturalHeight) {
+        naturalSize$.next({ width: img.naturalWidth, height: img.naturalHeight });
+      }
+    }
+  };
+
+  const onImgLoad = (event: Event) => updateNaturalSize(event.currentTarget as HTMLImageElement);
+
+  const onImgRef = (element: Element | undefined) => {
+    if (element instanceof HTMLImageElement && element.complete) {
+      updateNaturalSize(element);
     }
   };
 
@@ -83,7 +94,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
       </div>
 
       <div class="card-media-viewport">
-        <img class="laptop-img" src="/images/${matchGroup.laptopName}.webp" alt=${matchGroup.laptopName} loading="lazy" @load=${onImgLoad} />
+        <img ${ref(onImgRef)} class="laptop-img" src="/images/${matchGroup.laptopName}.webp" alt=${matchGroup.laptopName} loading="lazy" @load=${onImgLoad} />
         ${observe(overlay$.pipe(map(renderOverlay)))}
       </div>
 

@@ -8,13 +8,11 @@
 }
 
 .query-input-group {
-  display: flex;
-  gap: var(--spacing-sm);
-  align-items: stretch;
+  display: block;
 }
 
 .query-textarea {
-  flex: 1;
+  width: 100%;
   min-height: 52px;
   max-height: 120px;
   resize: vertical;
@@ -30,28 +28,6 @@
 
 .query-textarea:focus {
   border-color: var(--accent-color);
-}
-
-.match-button {
-  padding: 0 var(--spacing-lg);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #ffffff;
-  background-color: var(--accent-color);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-  white-space: nowrap;
-}
-
-.match-button:hover:not(:disabled) {
-  background-color: var(--accent-hover);
-}
-
-.match-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .controls-row {

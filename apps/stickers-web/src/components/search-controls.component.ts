@@ -1,6 +1,6 @@
 import { html } from "lit";
 import { map } from "rxjs";
-import { isSearching$, minSimilarity$, queryText$, searchError$, topK$, triggerMatch$ } from "../state";
+import { isSearching$, minSimilarity$, queryText$, searchError$, topK$ } from "../state";
 import { component, observe } from "../ui-kit";
 import "./search-controls.component.css";
 
@@ -8,13 +8,6 @@ export const SearchControlsComponent = component(() => {
   const onTextChange = (e: Event) => {
     const textarea = e.target as HTMLTextAreaElement;
     queryText$.next(textarea.value);
-  };
-
-  const onKeydown = (e: KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      triggerMatch$.next();
-    }
   };
 
   const onTopKChange = (e: Event) => {
@@ -39,11 +32,7 @@ export const SearchControlsComponent = component(() => {
           placeholder="Describe stickers or laptop aesthetic (e.g. 'anime sticker', 'Rust logo', 'cat on laptop', 'GitHub octocat', 'NASA logo')..."
           .value=${observe(queryText$)}
           @input=${onTextChange}
-          @keydown=${onKeydown}
         ></textarea>
-        <button type="button" class="match-button" ?disabled=${observe(isSearching$)} @click=${() => triggerMatch$.next()}>
-          ${observe(isSearching$.pipe(map((searching) => (searching ? "Searching..." : "Match"))))}
-        </button>
       </div>
 
       <div class="controls-row">

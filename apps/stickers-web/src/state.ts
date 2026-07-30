@@ -1,5 +1,5 @@
 import type { ResultItem } from "eigen-db";
-import { BehaviorSubject, Subject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 
 const LOCAL_STORAGE_KEY = "gemini_api_key";
 
@@ -27,8 +27,6 @@ export const minSimilarity$ = new BehaviorSubject<number>(0.2);
 export const searchResults$ = new BehaviorSubject<LaptopMatchGroup[]>([]);
 export const isSearching$ = new BehaviorSubject<boolean>(false);
 export const searchError$ = new BehaviorSubject<string | null>(null);
-
-export const triggerMatch$ = new Subject<void>();
 
 // Sync API key to localStorage whenever it changes
 apiKey$.subscribe((key) => {
