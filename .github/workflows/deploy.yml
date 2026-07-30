@@ -41,7 +41,15 @@ jobs:
       - name: Pull web assets from Git LFS
         env:
           GIT_LFS_FORCE_PROGRESS: "1"
-        run: git lfs pull --include="apps/stickers-web/public/**"
+        run: |
+          git config lfs.concurrenttransfers 4
+          for attempt in 1 2 3; do
+            if timeout --kill-after=30s 5m git lfs pull --include="apps/stickers-web/public/**"; then
+              exit 0
+            fi
+            echo "Git LFS pull attempt ${attempt} failed; retrying with downloaded objects preserved."
+          done
+          exit 1
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: npm install, build, and test
