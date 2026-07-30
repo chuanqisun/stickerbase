@@ -348,6 +348,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
   const renderSimilarSticker = (sticker: SimilarSticker) => {
     const [x, y, width, height] = sticker.bbox;
+    const cropWidth = `${Math.min(1, width / height) * 100}%`;
     const onCropLoad = (event: Event) => {
       const image = event.currentTarget as HTMLImageElement;
       image.style.width = `${(image.naturalWidth / width) * 100}%`;
@@ -358,8 +359,10 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
 
     return html`
       <button class="similar-sticker" type="button" aria-label="View ${sticker.stickerName}" @click=${() => selectSimilarSticker(sticker)}>
-        <div class="similar-sticker-crop" style="aspect-ratio: ${width} / ${height}">
-          <img src="/images/${sticker.laptopName}.webp" alt="Crop of ${sticker.stickerName}" loading="lazy" @load=${onCropLoad} />
+        <div class="similar-sticker-crop">
+          <div class="similar-sticker-crop-window" style="width: ${cropWidth}; aspect-ratio: ${width} / ${height}">
+            <img src="/images/${sticker.laptopName}.webp" alt="Crop of ${sticker.stickerName}" loading="lazy" @load=${onCropLoad} />
+          </div>
         </div>
         <span class="similar-sticker-caption">
           <span title=${sticker.stickerName}>${sticker.stickerName}</span>
