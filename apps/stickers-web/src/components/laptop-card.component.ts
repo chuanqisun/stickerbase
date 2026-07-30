@@ -1,4 +1,4 @@
-import { html } from "lit";
+import { html, svg } from "lit";
 import { BehaviorSubject, combineLatest, map } from "rxjs";
 import { fetchLaptopMetadata, type LaptopMetadata } from "../services/metadata.service";
 import type { LaptopMatchGroup } from "../state";
@@ -45,7 +45,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
         </defs>
         ${matchGroup.stickers.map((sticker, idx) => {
           const bbox = meta[sticker.stickerName];
-          if (!bbox || bbox.length < 4) return html``;
+          if (!bbox || bbox.length < 4) return svg``;
 
           const [x, y, w, h] = bbox;
           const isTopMatch = idx === 0;
@@ -55,7 +55,7 @@ export const LaptopCard = component((props: { matchGroup: LaptopMatchGroup; rank
           const labelY = y > 35 ? y - 10 : y + 25;
           const labelX = x + 6;
 
-          return html`
+          return svg`
             <g class="bbox-group">
               <rect class="bbox-rect ${isTopMatch ? "top-match" : ""}" x=${x} y=${y} width=${w} height=${h} rx="4"></rect>
               <rect x=${labelX - 4} y=${labelY - 18} width=${pctText.length * 9 + 12} height="22" rx="3" fill="rgba(0, 0, 0, 0.85)"></rect>
