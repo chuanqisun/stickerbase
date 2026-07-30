@@ -44,8 +44,7 @@ export const HeaderComponent = component(() => {
       <div class="header-brand">
         <h1 class="header-title">Stickerbase</h1>
         <p class="header-subtitle">
-          an interactive explorer for
-          <a href="https://stickertop.art/" target="_blank" rel="noopener noreferrer">stickertop</a>
+          an interactive explorer for Jack Gangi's <a href="https://stickertop.art/" target="_blank" rel="noopener noreferrer">stickertop</a>
         </p>
       </div>
 
