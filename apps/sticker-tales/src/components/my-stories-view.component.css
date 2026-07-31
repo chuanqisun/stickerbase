@@ -1,0 +1,44 @@
+.my-stories-container {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.submission-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.submission-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  background: var(--color-bg);
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.submission-thumb {
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+}
+
+.submission-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+}
+
+.submission-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}

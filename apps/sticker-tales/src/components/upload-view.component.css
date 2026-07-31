@@ -1,0 +1,126 @@
+.upload-view-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 56px);
+  padding: var(--spacing-md);
+  overflow-y: auto;
+  gap: var(--spacing-md);
+}
+
+.dropzone-card {
+  border: 2px dashed var(--color-border-dark);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-xl);
+  text-align: center;
+  background: var(--color-accent-bg);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin: var(--spacing-lg) auto;
+  max-width: 600px;
+}
+
+.dropzone-card:hover {
+  background: #eaeaea;
+}
+
+.dropzone-icon {
+  font-size: 3rem;
+}
+
+.workspace-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
+}
+
+.preview-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  background: #fafafa;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  overflow-y: auto;
+}
+
+.stickers-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.sticker-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  background: var(--color-bg);
+}
+
+.sticker-pill:hover {
+  background: var(--color-accent-bg);
+}
+
+.sticker-pill.selected {
+  border-color: var(--color-border-dark);
+  font-weight: bold;
+  background: var(--color-highlight);
+}
+
+.sticker-pill.has-story {
+  border-color: var(--color-success);
+}
+
+.scanning-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--color-border);
+  border-top-color: var(--color-border-dark);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-banner {
+  background-color: #ffebee;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+}
