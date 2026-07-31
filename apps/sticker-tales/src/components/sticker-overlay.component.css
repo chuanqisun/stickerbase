@@ -36,7 +36,9 @@
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
-  transition: fill 0.15s ease, stroke-width 0.15s ease;
+  transition:
+    fill 0.15s ease,
+    stroke-width 0.15s ease;
 }
 
 .sticker-group:hover .sticker-contour-path,
@@ -65,7 +67,9 @@
   vector-effect: non-scaling-stroke;
   transform-box: fill-box;
   transform-origin: center;
-  transition: transform 0.15s ease, fill 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    fill 0.15s ease;
 }
 
 .sticker-group:hover .badge-bg,
