@@ -20,36 +20,64 @@
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
-.sticker-mask-shape {
+.sticker-group {
+  pointer-events: auto;
+  cursor: pointer;
+  outline: none;
+}
+
+.sticker-contour-path {
   fill: rgba(255, 255, 255, 0.15);
   stroke: var(--color-border-dark);
-  stroke-width: 2;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  transition: fill 0.15s ease, stroke-width 0.15s ease;
 }
 
-.sticker-mask-shape:hover {
+.sticker-group:hover .sticker-contour-path,
+.sticker-group:focus-visible .sticker-contour-path {
   fill: rgba(255, 221, 0, 0.35);
   stroke: var(--color-border-dark);
-  stroke-width: 3;
+  stroke-width: 4;
 }
 
-.sticker-mask-shape.selected {
+.sticker-contour-path.selected {
   fill: rgba(255, 221, 0, 0.55);
   stroke: var(--color-border-dark);
   stroke-width: 4;
 }
 
-.sticker-mask-shape.has-story {
+.sticker-contour-path.has-story {
+  fill: rgba(46, 125, 50, 0.24);
   stroke: var(--color-success);
+  stroke-width: 3;
 }
 
-.sticker-badge {
+.badge-bg {
+  fill: #ffffff;
+  stroke: var(--color-border-dark);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.15s ease, fill 0.15s ease;
+}
+
+.sticker-group:hover .badge-bg,
+.sticker-group:focus-visible .badge-bg {
+  fill: var(--color-highlight);
+  transform: scale(1.15);
+}
+
+.badge-text {
   pointer-events: none;
-  font-size: 11px;
+  user-select: none;
+  font-size: 12px;
   font-weight: bold;
   fill: #000;
 }

@@ -1,7 +1,9 @@
-import { html } from "lit";
+import { html, svg } from "lit";
+import type { Observable } from "rxjs";
+import { map } from "rxjs";
 import { selectSticker } from "../state";
 import type { StickerMask, StickerStory } from "../types";
-import { component } from "../ui-kit";
+import { component, observe } from "../ui-kit";
 import "./sticker-overlay.component.css";
 
 export interface StickerOverlayProps {
@@ -9,13 +11,13 @@ export interface StickerOverlayProps {
   imageWidth: number;
   imageHeight: number;
   stickers: StickerMask[];
-  selectedStickerId: string | null;
+  selectedStickerId$: Observable<string | null>;
   stories?: Record<string, StickerStory>;
   onSelectSticker?: (id: string) => void;
 }
 
 export const StickerOverlayComponent = component((props: StickerOverlayProps) => {
-  const { imageDataUrl, imageWidth, imageHeight, stickers, selectedStickerId, stories = {}, onSelectSticker } = props;
+  const { imageDataUrl, imageWidth, imageHeight, stickers, selectedStickerId$, stories = {}, onSelectSticker } = props;
 
   const viewBox = `0 0 ${imageWidth || 1000} ${imageHeight || 1000}`;
 
@@ -31,43 +33,44 @@ export const StickerOverlayComponent = component((props: StickerOverlayProps) =>
     <div class="sticker-overlay-container">
       <img class="laptop-image" src=${imageDataUrl} alt="Laptop cover" />
 
-      <svg class="overlay-svg" viewBox=${viewBox} preserveAspectRatio="xMidYMid meet">
-        ${stickers.map((sticker, idx) => {
-          const isSelected = sticker.id === selectedStickerId;
-          const hasStory = Boolean(stories[sticker.id]);
+      ${svg`
+        <svg class="overlay-svg" viewBox=${viewBox} preserveAspectRatio="xMidYMid meet">
+          ${stickers.map((sticker, idx) => {
+            const hasStory = Boolean(stories[sticker.id]);
 
-          // Rect path or polygon
-          const { x, y, width, height } = sticker.box;
+            return svg`
+              <g
+                class="sticker-group"
+                role="button"
+                tabindex="0"
+                aria-pressed=${observe(selectedStickerId$.pipe(map((selectedStickerId) => selectedStickerId === sticker.id)))}
+                aria-label=${`Sticker ${idx + 1}${hasStory ? ", story recorded" : ""}`}
+                @click=${() => handleStickerClick(sticker.id)}
+                @keydown=${(event: KeyboardEvent) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleStickerClick(sticker.id);
+                  }
+                }}
+              >
+                <path
+                  class=${observe(
+                    selectedStickerId$.pipe(
+                      map((selectedStickerId) => `sticker-contour-path ${selectedStickerId === sticker.id ? "selected" : ""} ${hasStory ? "has-story" : ""}`),
+                    ),
+                  )}
+                  d=${sticker.svgPath}
+                />
 
-          return html`
-            <g class="sticker-group" @click=${() => handleStickerClick(sticker.id)}>
-              <rect
-                class="sticker-mask-shape ${isSelected ? "selected" : ""} ${hasStory ? "has-story" : ""}"
-                x=${x}
-                y=${y}
-                width=${width}
-                height=${height}
-                rx="4"
-              />
-
-              <rect
-                x=${x + 2}
-                y=${y + 2}
-                width="24"
-                height="22"
-                rx="3"
-                fill=${hasStory ? "#2e7d32" : isSelected ? "#000000" : "#ffffff"}
-                stroke="#000"
-                stroke-width="1"
-              />
-
-              <text class="sticker-badge" x=${x + 14} y=${y + 17} text-anchor="middle" fill=${hasStory || isSelected ? "#ffffff" : "#000000"}>
-                ${hasStory ? "🎙️" : idx + 1}
-              </text>
-            </g>
-          `;
-        })}
-      </svg>
+                <g class="badge-group" transform=${`translate(${sticker.centroid.x}, ${sticker.centroid.y})`}>
+                  <circle class="badge-bg" r="14" />
+                  <text class="badge-text" y="4" text-anchor="middle">${hasStory ? "🎙️" : idx + 1}</text>
+                </g>
+              </g>
+            `;
+          })}
+        </svg>
+      `}
     </div>
   `;
 });

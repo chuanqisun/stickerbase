@@ -1,7 +1,7 @@
 import { html } from "lit";
 import { map } from "rxjs";
 import { fileToDataUrl } from "../services/sam.service";
-import { resetUploadState, selectSticker, selectedStickerId$, setUploadImageData, startSamScanning, submitLaptopStory, uploadState$ } from "../state";
+import { resetUploadState, selectedStickerId$, setUploadImageData, startSamScanning, submitLaptopStory, uploadState$ } from "../state";
 import { component, observe } from "../ui-kit";
 import { AudioRecorderComponent } from "./audio-recorder.component";
 import { StickerOverlayComponent } from "./sticker-overlay.component";
@@ -96,7 +96,7 @@ export const UploadViewComponent = component(() => {
                     imageWidth: state.imageWidth,
                     imageHeight: state.imageHeight,
                     stickers: state.stickers,
-                    selectedStickerId: selectedStickerIdObs.value,
+                    selectedStickerId$: selectedStickerIdObs,
                     stories: state.stories,
                   })}
                 </div>
@@ -112,20 +112,7 @@ export const UploadViewComponent = component(() => {
                     <input id="laptop-title" type="text" .value=${laptopTitle} @input=${(e: Event) => (laptopTitle = (e.target as HTMLInputElement).value)} />
                   </div>
 
-                  <div>
-                    <h4>Detected Stickers (${state.stickers.length})</h4>
-                    <div class="stickers-list">
-                      ${state.stickers.map((sticker, idx) => {
-                        const isSel = selectedStickerIdObs.value === sticker.id;
-                        const hasStory = Boolean(state.stories[sticker.id]);
-                        return html`
-                          <div class="sticker-pill ${isSel ? "selected" : ""} ${hasStory ? "has-story" : ""}" @click=${() => selectSticker(sticker.id)}>
-                            ${hasStory ? "🎙️" : ""} Sticker #${idx + 1}
-                          </div>
-                        `;
-                      })}
-                    </div>
-                  </div>
+                  <h4>Detected Stickers (${state.stickers.length})</h4>
 
                   ${observe(
                     selectedStickerIdObs.pipe(

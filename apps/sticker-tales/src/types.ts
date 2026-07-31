@@ -6,6 +6,8 @@ export interface Point {
 export interface StickerMask {
   id: string;
   polygon: Point[];
+  svgPath: string;
+  centroid: Point;
   box: {
     x: number;
     y: number;

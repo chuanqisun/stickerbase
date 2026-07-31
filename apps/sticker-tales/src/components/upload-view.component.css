@@ -58,41 +58,6 @@
   overflow-y: auto;
 }
 
-.stickers-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-}
-
-.sticker-pill {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  background: var(--color-bg);
-}
-
-.sticker-pill:hover {
-  background: var(--color-accent-bg);
-}
-
-.sticker-pill.selected {
-  border-color: var(--color-border-dark);
-  font-weight: bold;
-  background: var(--color-highlight);
-}
-
-.sticker-pill.has-story {
-  border-color: var(--color-success);
-}
-
 .scanning-overlay {
   display: flex;
   flex-direction: column;

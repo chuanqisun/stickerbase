@@ -114,9 +114,7 @@ export async function startSamScanning(): Promise<void> {
       imageHeight: result.height,
     });
 
-    if (result.stickers.length > 0) {
-      selectedStickerId$.next(result.stickers[0].id);
-    }
+    selectedStickerId$.next(null);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     uploadState$.next({
