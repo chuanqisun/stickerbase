@@ -131,11 +131,7 @@ export const UploadViewComponent = component(() => {
                   )}
 
                   <div style="margin-top: auto; padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);">
-                    <button
-                      class="primary"
-                      style="width: 100%; justify-content: center;"
-                      @click=${handleSubmit}
-                    >
+                    <button class="primary" style="width: 100%; justify-content: center;" @click=${handleSubmit}>
                       🚀 Submit Laptop Story (${Object.keys(state.stories).length} Recorded)
                     </button>
                   </div>
