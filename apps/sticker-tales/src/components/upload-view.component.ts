@@ -134,7 +134,6 @@ export const UploadViewComponent = component(() => {
                     <button
                       class="primary"
                       style="width: 100%; justify-content: center;"
-                      ?disabled=${Object.keys(state.stories).length === 0}
                       @click=${handleSubmit}
                     >
                       🚀 Submit Laptop Story (${Object.keys(state.stories).length} Recorded)
