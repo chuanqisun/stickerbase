@@ -1,24 +1,38 @@
 import { html } from "lit";
-import { map } from "rxjs";
+import { BehaviorSubject, distinctUntilChanged, map } from "rxjs";
 import { submissions$ } from "../state";
-import type { LaptopSubmission, StickerMask, StickerStory } from "../types";
+import type { LaptopSubmission } from "../types";
 import { component, observe } from "../ui-kit";
+import { StickerOverlayComponent } from "./sticker-overlay.component";
 import "./all-stories-view.component.css";
+
+interface LaptopDetailsState {
+  submission: LaptopSubmission;
+  activeStickerId: string | null;
+}
 
 export const AllStoriesViewComponent = component(() => {
   const submissionsObs = submissions$;
-  let selectedSubmission: LaptopSubmission | null = null;
-  let activeStickerId: string | null = null;
+  const detailsState$ = new BehaviorSubject<LaptopDetailsState | null>(null);
+  const activeStickerId$ = detailsState$.pipe(
+    map((details) => details?.activeStickerId ?? null),
+    distinctUntilChanged(),
+  );
 
   const handleSelectLaptop = (sub: LaptopSubmission) => {
-    selectedSubmission = sub;
     const firstRecordedId = Object.keys(sub.stories)[0] || sub.stickers[0]?.id || null;
-    activeStickerId = firstRecordedId;
+    detailsState$.next({ submission: sub, activeStickerId: firstRecordedId });
+  };
+
+  const handleSelectSticker = (stickerId: string) => {
+    const details = detailsState$.value;
+    if (details) {
+      detailsState$.next({ ...details, activeStickerId: stickerId });
+    }
   };
 
   const handleCloseModal = () => {
-    selectedSubmission = null;
-    activeStickerId = null;
+    detailsState$.next(null);
   };
 
   return html`
@@ -45,11 +59,11 @@ export const AllStoriesViewComponent = component(() => {
                 ${subs.map((sub: LaptopSubmission) => {
                   const storyCount = Object.keys(sub.stories).length;
                   return html`
-                    <div class="laptop-story-card" @click=${() => handleSelectLaptop(sub)}>
+                    <button type="button" class="laptop-story-card" @click=${() => handleSelectLaptop(sub)}>
                       <img class="laptop-thumb" src=${sub.laptopImageDataUrl} alt=${sub.title} />
                       <strong>💻 ${sub.title}</strong>
                       <small style="color: var(--color-text-muted)"> ${sub.stickers.length} Stickers detected • 🎙️ ${storyCount} Audio Stories </small>
-                    </div>
+                    </button>
                   `;
                 })}
               </div>
@@ -57,95 +71,78 @@ export const AllStoriesViewComponent = component(() => {
           }),
         ),
       )}
-      ${selectedSubmission
-        ? (() => {
-            const currentSub = selectedSubmission as LaptopSubmission;
+      ${observe(
+        detailsState$.pipe(
+          map((details) => {
+            if (!details) return html``;
+
+            const { submission, activeStickerId } = details;
+            const activeSticker = submission.stickers.find((sticker) => sticker.id === activeStickerId);
+            const activeStory = activeStickerId ? submission.stories[activeStickerId] : undefined;
+
             return html`
-              <div class="laptop-details-modal" @click=${handleCloseModal}>
-                <div class="details-modal-box" @click=${(e: Event) => e.stopPropagation()}>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2>💻 ${currentSub.title}</h2>
-                    <button @click=${handleCloseModal}>✕ Close</button>
+              <div
+                class="laptop-details-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="laptop-details-title"
+                @click=${handleCloseModal}
+                @keydown=${(event: KeyboardEvent) => {
+                  if (event.key === "Escape") handleCloseModal();
+                }}
+              >
+                <div class="details-modal-box" @click=${(event: Event) => event.stopPropagation()}>
+                  <div class="details-modal-header">
+                    <h2 id="laptop-details-title">💻 ${submission.title}</h2>
+                    <button type="button" @click=${handleCloseModal}>Close</button>
                   </div>
 
                   <div class="details-layout">
                     <div class="details-preview">
-                      <div style="position: relative; max-width: 100%; max-height: 100%;">
-                        <img
-                          src=${currentSub.laptopImageDataUrl}
-                          alt=${currentSub.title}
-                          style="width: 100%; height: auto; border-radius: var(--border-radius);"
-                        />
-
-                        <svg
-                          style="position: absolute; top:0; left:0; width:100%; height:100%;"
-                          viewBox="0 0 ${currentSub.imageWidth || 1000} ${currentSub.imageHeight || 1000}"
-                        >
-                          ${currentSub.stickers.map((sticker: StickerMask) => {
-                            const isSel = activeStickerId === sticker.id;
-                            const hasStory = Boolean(currentSub.stories[sticker.id]);
-                            const { x, y, width, height } = sticker.box;
-
-                            return html`
-                              <g style="cursor: pointer;" @click=${() => (activeStickerId = sticker.id)}>
-                                <rect
-                                  x=${x}
-                                  y=${y}
-                                  width=${width}
-                                  height=${height}
-                                  rx="4"
-                                  fill=${isSel ? "rgba(255, 221, 0, 0.4)" : "rgba(255, 255, 255, 0.1)"}
-                                  stroke=${hasStory ? "#2e7d32" : "#000000"}
-                                  stroke-width=${isSel ? "4" : "2"}
-                                />
-                              </g>
-                            `;
-                          })}
-                        </svg>
-                      </div>
+                      ${StickerOverlayComponent({
+                        imageDataUrl: submission.laptopImageDataUrl,
+                        imageWidth: submission.imageWidth,
+                        imageHeight: submission.imageHeight,
+                        stickers: submission.stickers,
+                        selectedStickerId$: activeStickerId$,
+                        stories: submission.stories,
+                        onSelectSticker: handleSelectSticker,
+                      })}
                     </div>
 
                     <div class="details-sidebar">
-                      <h3>Sticker Stories</h3>
+                      <div>
+                        <h3>Sticker Stories</h3>
+                        <p>Select a sticker on the laptop to hear its recorded story.</p>
+                      </div>
 
-                      ${activeStickerId
-                        ? (() => {
-                            const targetStickerId = activeStickerId as string;
-                            const sticker = currentSub.stickers.find((s: StickerMask) => s.id === targetStickerId);
-                            const story = currentSub.stories[targetStickerId] as StickerStory | undefined;
-
-                            return html`
-                              <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-                                ${sticker
-                                  ? html`<img
-                                      src=${sticker.cropDataUrl}
-                                      style="width: 60px; height: 60px; object-fit: contain; border: 1px solid var(--color-border);"
-                                    />`
-                                  : html``}
-                                <div>
-                                  <strong>${story?.title || "Selected Sticker"}</strong>
-                                  <br />
-                                  <small style="color: var(--color-text-muted)">ID: ${targetStickerId}</small>
-                                </div>
+                      ${activeSticker
+                        ? html`
+                            <div class="selected-sticker-details">
+                              <img class="selected-sticker-image" src=${activeSticker.cropDataUrl} alt="Selected sticker" />
+                              <div>
+                                <strong>${activeStory?.title || "Selected Sticker"}</strong>
+                                <small>ID: ${activeSticker.id}</small>
                               </div>
+                            </div>
 
-                              ${story
-                                ? html`
-                                    <div style="margin-top: var(--spacing-sm);">
-                                      <audio controls autoplay src=${story.audioDataUrl}></audio>
-                                    </div>
-                                  `
-                                : html`<p style="color: var(--color-text-muted)">No story recorded for this sticker.</p>`}
-                            `;
-                          })()
-                        : html`<p style="color: var(--color-text-muted)">Click a sticker to play its story!</p>`}
+                            ${activeStory
+                              ? html`
+                                  <div class="story-playback">
+                                    <audio controls preload="metadata" src=${activeStory.audioDataUrl}></audio>
+                                  </div>
+                                `
+                              : html`<p class="no-story-message">No story was recorded for this sticker.</p>`}
+                          `
+                        : html`<p class="no-story-message">Select a sticker to view its story.</p>`}
                     </div>
                   </div>
                 </div>
               </div>
             `;
-          })()
-        : html``}
+          }),
+        ),
+      )}
     </div>
   `;
 });

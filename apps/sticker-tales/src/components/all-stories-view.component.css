@@ -18,14 +18,19 @@
   border-radius: var(--border-radius);
   padding: var(--spacing-sm);
   background: var(--color-bg);
+  color: inherit;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  width: 100%;
+  font: inherit;
+  text-align: left;
   transition: border-color 0.15s ease;
 }
 
-.laptop-story-card:hover {
+.laptop-story-card:hover,
+.laptop-story-card:focus-visible {
   border-color: var(--color-border-dark);
 }
 
@@ -63,6 +68,19 @@
   gap: var(--spacing-md);
 }
 
+.details-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.details-modal-header h2,
+.details-sidebar h3,
+.details-sidebar p {
+  margin: 0;
+}
+
 .details-layout {
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -83,9 +101,70 @@
   overflow: hidden;
 }
 
+.details-preview .sticker-overlay-container {
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.details-preview .laptop-image {
+  max-height: calc(85vh - 130px);
+}
+
 .details-sidebar {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
   overflow-y: auto;
+}
+
+.selected-sticker-details {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.selected-sticker-details div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.selected-sticker-details small,
+.no-story-message {
+  color: var(--color-text-muted);
+}
+
+.selected-sticker-image {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.story-playback audio {
+  width: 100%;
+}
+
+@media (max-width: 800px) {
+  .details-modal-box {
+    width: calc(100vw - 2 * var(--spacing-md));
+    height: calc(100vh - 2 * var(--spacing-md));
+    padding: var(--spacing-md);
+  }
+
+  .details-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    overflow-y: auto;
+  }
+
+  .details-preview {
+    min-height: 280px;
+  }
 }
