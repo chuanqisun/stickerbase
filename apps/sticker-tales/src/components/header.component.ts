@@ -33,21 +33,21 @@ export const HeaderComponent = component(() => {
   const template = html`
     <header class="app-header">
       <div class="header-brand">
-        <h1 class="header-title">🏷️ Sticker Tales</h1>
+        <h1 class="header-title">Sticker Tales</h1>
       </div>
 
       <nav class="header-nav">
         <button class="nav-btn ${observe(currentViewObs.pipe(map((v) => (v === "upload" ? "active" : ""))))}" @click=${() => handleNav("upload")}>
-          📸 Upload & Record
+          Upload & Record
         </button>
         <button class="nav-btn ${observe(currentViewObs.pipe(map((v) => (v === "connections" ? "active" : ""))))}" @click=${() => handleNav("connections")}>
-          🔗 My Connections
+          My Connections
         </button>
         <button class="nav-btn ${observe(currentViewObs.pipe(map((v) => (v === "all-stories" ? "active" : ""))))}" @click=${() => handleNav("all-stories")}>
-          📚 All Stories
+          All Stories
         </button>
         <button class="nav-btn ${observe(currentViewObs.pipe(map((v) => (v === "my-stories" ? "active" : ""))))}" @click=${() => handleNav("my-stories")}>
-          📝 My Stories
+          My Stories
         </button>
       </nav>
 
@@ -58,16 +58,16 @@ export const HeaderComponent = component(() => {
               const hasKeys = Boolean(keys.geminiApiKey && keys.falApiKey);
               return html`
                 <button class="key-status-badge ${hasKeys ? "ok" : "missing"}" @click=${() => setApiKeysModalOpen(true)}>
-                  ${hasKeys ? "🔑 API Keys Ready" : "⚠️ Configure API Keys"}
+                  ${hasKeys ? "API Keys Ready" : "Configure API Keys"}
                 </button>
               `;
             }),
           ),
         )}
 
-        <button @click=${() => downloadDbBinaryFile()} title="Download current EigenDB index">⬇️ Download DB</button>
-        <button @click=${handleImportDb} title="Import an existing .bin database file">⬆️ Import DB</button>
-        <button class="danger" @click=${resetAllData} title="Reset local storage and OPFS">🗑️ Reset</button>
+        <button @click=${() => downloadDbBinaryFile()} title="Download current EigenDB index">Download DB</button>
+        <button @click=${handleImportDb} title="Import an existing .bin database file">Import DB</button>
+        <button class="danger" @click=${resetAllData} title="Reset local storage and OPFS">Reset</button>
       </div>
     </header>
   `;
